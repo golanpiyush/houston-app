@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dynamic_color/dynamic_color.dart';
-import 'screens/main_screen.dart';
+import 'package:houston/widgets/update_wrapper.dart';
 import 'providers/settings_provider.dart';
 
 void main() {
@@ -23,7 +23,7 @@ class MyApp extends ConsumerWidget {
           theme: _getTheme(settings.themeMode, lightDynamic, false),
           darkTheme: _getTheme(settings.themeMode, darkDynamic, true),
           themeMode: _getThemeMode(settings.themeMode),
-          home: const MainScreen(),
+          home: const UpdateWrapper(),
           debugShowCheckedModeBanner: false,
         );
       },

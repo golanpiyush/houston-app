@@ -29,7 +29,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Music Player'), elevation: 0),
+      appBar: AppBar(title: const Text('HOUSTON'), elevation: 0),
       body: Column(
         children: [
           // Search Bar
@@ -67,7 +67,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
           // Search Results or Home Content
           Expanded(
-            child: ytMusicState.searchResults.isNotEmpty
+            child: ytMusicState.isLoading
+                ? Center(
+                    child: SizedBox(
+                      height: 250,
+                      width: 250,
+                      child: Lottie.asset('assets/animations/loadingHome.json'),
+                    ),
+                  )
+                : ytMusicState.searchResults.isNotEmpty
                 ? _buildSearchResults()
                 : _buildHomeContent(),
           ),

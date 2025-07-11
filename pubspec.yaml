@@ -16,7 +16,7 @@ dependencies:
     sdk: flutter
 
 
-  yt_flutter_musicapi: ^1.1.2
+  yt_flutter_musicapi: ^1.1.4
   just_audio:
   color_palette_generator:
   shared_preferences:
@@ -26,6 +26,10 @@ dependencies:
   cached_network_image:
   fluttertoast:
   lottie:
+  url_launcher:
+  package_info_plus:
+  flutter_markdown:
+  icons_plus:
   
   cupertino_icons: ^1.0.8
 
