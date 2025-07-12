@@ -43,10 +43,15 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons:
 
   
   flutter_lints: ^5.0.0
 
+flutter_icons:
+  android: true
+  image_path: "assets/icons/icon_launcher.png" # your icon path here
+  min_sdk_android: 24
 
 flutter:
 
