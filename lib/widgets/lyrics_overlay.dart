@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:houston/models/lyrics_model.dart';
 import 'package:houston/providers/audio_provider.dart';
+import 'package:houston/providers/settings_provider.dart';
 
 class LyricsOverlay extends ConsumerStatefulWidget {
   const LyricsOverlay({super.key});
@@ -17,41 +19,96 @@ class _LyricsOverlayState extends ConsumerState<LyricsOverlay>
   late ScrollController _scrollController;
   late AnimationController _glowController;
   late AnimationController _scaleController;
+  late AnimationController _appearController;
+  late AnimationController _wordGlowController;
 
   int _currentIndex = 0;
   int _currentWordIndex = 0;
   StreamSubscription<Duration>? _positionSub;
   Duration _currentPosition = Duration.zero;
 
-  // Constants for layout
-  static const double itemHeight = 70.0;
-  static const double albumArtSize = 335.0;
+  // 25 best Google Fonts for lyrics
+  static const List<String> availableFonts = [
+    'Poppins',
+    'Roboto',
+    'Open Sans',
+    'Montserrat',
+    'Lato',
+    'Nunito',
+    'Inter',
+    'Raleway',
+    'Playfair Display',
+    'Sacramento',
+    'Oswald',
+    'Merriweather',
+    'Ubuntu',
+    'Fira Sans',
+    'Crimson Text',
+    'Libre Baskerville',
+    'PT Sans',
+    'Quicksand',
+    'Beau rivage',
+    'Dancing Script',
+    'Comfortaa',
+    'Pacifico',
+    'Caveat',
+    'Satisfy',
+    'Great Vibes',
+  ];
+
+  // Enhanced constants for better layout
+  static const double itemHeight = 120.0;
+  static const double overlaySize = 335.0;
+  static const double horizontalPadding = 20.0;
+  static const double verticalItemPadding = 12.0;
+  static const double borderRadius = 24.0;
+  static const double gradientHeight = 90.0;
+
+  // Animation constants
+  static const Duration _animationDuration = Duration(milliseconds: 300);
+  static const Duration _glowDuration = Duration(milliseconds: 2000);
+  static const Duration _wordGlowDuration = Duration(milliseconds: 1500);
+  static const Duration _scaleDuration = Duration(milliseconds: 400);
+  static const Duration _scrollDuration = Duration(milliseconds: 600);
 
   @override
   void initState() {
     super.initState();
+    _initializeControllers();
+    _startPositionListener();
+  }
+
+  void _initializeControllers() {
     _scrollController = ScrollController();
-    _glowController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+
+    _glowController = AnimationController(duration: _glowDuration, vsync: this)
+      ..repeat(reverse: true);
+
+    _wordGlowController = AnimationController(
+      duration: _wordGlowDuration,
       vsync: this,
     )..repeat(reverse: true);
 
     _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: _scaleDuration,
       vsync: this,
     );
 
-    // Initialize position subscription after the first frame
+    _appearController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _appearController.forward();
+  }
+
+  void _startPositionListener() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _positionSub = ref
           .read(audioProvider.notifier)
           .positionStream
           .listen(_onPositionChanged);
     });
-  }
-
-  void _calculateLayout() {
-    // No longer needed - using fixed album art size
   }
 
   void _onPositionChanged(Duration position) {
@@ -68,8 +125,7 @@ class _LyricsOverlayState extends ConsumerState<LyricsOverlay>
     if (index != _currentIndex) {
       setState(() => _currentIndex = index);
       _scrollToIndex(index);
-      _scaleController.reset();
-      _scaleController.forward();
+      _triggerScaleAnimation();
     }
 
     if (wordIndex != _currentWordIndex) {
@@ -77,15 +133,20 @@ class _LyricsOverlayState extends ConsumerState<LyricsOverlay>
     }
   }
 
+  void _triggerScaleAnimation() {
+    _scaleController.reset();
+    _scaleController.forward();
+  }
+
   int _getCurrentIndex(int position, List<LyricsLine> lyrics) {
     if (lyrics.isEmpty) return 0;
 
-    for (int i = 0; i < lyrics.length; i++) {
-      if (position < lyrics[i].timestamp) {
-        return i == 0 ? 0 : i - 1;
+    for (int i = lyrics.length - 1; i >= 0; i--) {
+      if (position >= lyrics[i].timestamp) {
+        return i;
       }
     }
-    return lyrics.length - 1;
+    return 0;
   }
 
   int _getCurrentWordIndex(
@@ -98,28 +159,35 @@ class _LyricsOverlayState extends ConsumerState<LyricsOverlay>
     }
 
     final line = lyrics[lineIndex];
-    final words = line.text.split(' ');
+    final words = _splitTextIntoWords(line.text);
 
     if (words.isEmpty) return 0;
 
-    // Only calculate word timing if we're at or past the current line's timestamp
-    if (position < line.timestamp) {
-      return 0;
-    }
+    if (position < line.timestamp) return 0;
 
-    // Calculate word timing based on line duration
     final nextLineTimestamp = lineIndex + 1 < lyrics.length
         ? lyrics[lineIndex + 1].timestamp
-        : line.timestamp + 4000; // Default 4 seconds if last line
+        : line.timestamp + 4000;
 
     final lineDuration = nextLineTimestamp - line.timestamp;
-    if (lineDuration <= 0) return 0;
+    if (lineDuration <= 0) return words.length - 1;
 
-    final wordDuration = lineDuration / words.length;
     final timeInLine = position - line.timestamp;
-    final wordIndex = (timeInLine / wordDuration).floor();
+    final progress = (timeInLine / lineDuration).clamp(0.0, 1.0);
+
+    // Smooth word progression with easing
+    final easedProgress = _easeInOutCubic(progress);
+    final wordIndex = (easedProgress * words.length).floor();
 
     return wordIndex.clamp(0, words.length - 1);
+  }
+
+  double _easeInOutCubic(double t) {
+    return t < 0.5 ? 4 * t * t * t : 1 - math.pow(-2 * t + 2, 3) / 2;
+  }
+
+  List<String> _splitTextIntoWords(String text) {
+    return text.trim().split(RegExp(r'\s+'));
   }
 
   void _scrollToIndex(int index) {
@@ -128,13 +196,17 @@ class _LyricsOverlayState extends ConsumerState<LyricsOverlay>
 
     if (lyrics.isEmpty || !_scrollController.hasClients) return;
 
-    // Calculate center offset based on album art size
-    final centerOffset = (albumArtSize / 2) - (itemHeight / 2);
-    final targetOffset = (index * itemHeight) - centerOffset;
+    final centerOfOverlay = overlaySize / 40;
+    final itemCenter = (index * itemHeight) + (itemHeight / 8);
+    final targetOffset = itemCenter - centerOfOverlay;
+
+    final maxScrollExtent = _scrollController.position.maxScrollExtent;
+    final minScrollExtent = _scrollController.position.minScrollExtent;
+    final clampedOffset = targetOffset.clamp(minScrollExtent, maxScrollExtent);
 
     _scrollController.animateTo(
-      targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
-      duration: const Duration(milliseconds: 600),
+      clampedOffset,
+      duration: _scrollDuration,
       curve: Curves.easeOutCubic,
     );
   }
@@ -157,7 +229,74 @@ class _LyricsOverlayState extends ConsumerState<LyricsOverlay>
     _scrollController.dispose();
     _glowController.dispose();
     _scaleController.dispose();
+    _appearController.dispose();
+    _wordGlowController.dispose();
     super.dispose();
+  }
+
+  // 3. Update LyricsOverlay _getBaseTextStyle method
+  TextStyle _getBaseTextStyle() {
+    final settings = ref.watch(settingsProvider);
+
+    // Map font names to Google Fonts
+    TextStyle Function() getFontStyle = () {
+      switch (settings.lyricsFont) {
+        case 'Poppins':
+          return GoogleFonts.poppins();
+        case 'Roboto':
+          return GoogleFonts.roboto();
+        case 'Open Sans':
+          return GoogleFonts.openSans();
+        case 'Montserrat':
+          return GoogleFonts.montserrat();
+        case 'Lato':
+          return GoogleFonts.lato();
+        case 'Nunito':
+          return GoogleFonts.nunito();
+        case 'Inter':
+          return GoogleFonts.inter();
+        case 'Raleway':
+          return GoogleFonts.raleway();
+        case 'Playfair Display':
+          return GoogleFonts.playfairDisplay();
+        case 'Luckiest Guy':
+          return GoogleFonts.luckiestGuy();
+        case 'Oswald':
+          return GoogleFonts.oswald();
+        case 'Merriweather':
+          return GoogleFonts.merriweather();
+        case 'Ubuntu':
+          return GoogleFonts.ubuntu();
+        case 'Fira Sans':
+          return GoogleFonts.firaSans();
+        case 'Crimson Text':
+          return GoogleFonts.crimsonText();
+        case 'Libre Baskerville':
+          return GoogleFonts.libreBaskerville();
+        case 'PT Sans':
+          return GoogleFonts.ptSans();
+        case 'Quicksand':
+          return GoogleFonts.quicksand();
+        case 'Caveat':
+          return GoogleFonts.caveat();
+        case 'Dancing Script':
+          return GoogleFonts.dancingScript();
+        case 'Comfortaa':
+          return GoogleFonts.comfortaa();
+        case 'Pacifico':
+          return GoogleFonts.pacifico();
+        case 'Caveat':
+          return GoogleFonts.caveat();
+        case 'Satisfy':
+          return GoogleFonts.satisfy();
+        case 'Great Vibes':
+          return GoogleFonts.greatVibes();
+        default:
+          return GoogleFonts.poppins();
+      }
+    };
+
+    return getFontStyle().copyWith(height: 1.4, letterSpacing: 0.5);
   }
 
   Widget _buildWordByWordText(
@@ -165,75 +304,33 @@ class _LyricsOverlayState extends ConsumerState<LyricsOverlay>
     int currentWordIndex,
     bool isActive,
   ) {
-    if (text.isEmpty) return const SizedBox.shrink();
+    if (text.trim().isEmpty) return const SizedBox.shrink();
 
-    final words = text.split(' ').where((word) => word.isNotEmpty).toList();
+    final words = _splitTextIntoWords(text);
     if (words.isEmpty) return const SizedBox.shrink();
 
     return AnimatedBuilder(
-      animation: _glowController,
+      animation: Listenable.merge([_wordGlowController, _scaleController]),
       builder: (context, child) {
         return Container(
-          width: albumArtSize - 40, // Account for padding within album art
+          width: overlaySize - (horizontalPadding * 2),
+          constraints: const BoxConstraints(minHeight: 50),
           child: Wrap(
             alignment: WrapAlignment.center,
             runAlignment: WrapAlignment.center,
+            spacing: 6,
+            runSpacing: 4,
             children: words.asMap().entries.map((entry) {
               final wordIndex = entry.key;
               final word = entry.value;
               final isCurrentWord = isActive && wordIndex <= currentWordIndex;
               final isActiveWord = isActive && wordIndex == currentWordIndex;
 
-              // Enhanced opacity logic
-              Color textColor;
-              if (isActive) {
-                if (isCurrentWord) {
-                  textColor = Colors.white;
-                } else {
-                  textColor = Colors.white.withOpacity(
-                    0.4,
-                  ); // Lower opacity for inactive words in active line
-                }
-              } else {
-                textColor = Colors.white.withOpacity(
-                  0.25,
-                ); // Much lower opacity for inactive lines
-              }
-
-              return AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.symmetric(horizontal: 2),
-                child: AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
-                  style: GoogleFonts.poppins(
-                    fontSize: isActive ? 20 : 16,
-                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                    color: textColor,
-                    shadows: isActiveWord
-                        ? [
-                            Shadow(
-                              blurRadius: 15 + (_glowController.value * 10),
-                              color: Colors.cyan.withOpacity(0.8),
-                              offset: const Offset(0, 0),
-                            ),
-                            Shadow(
-                              blurRadius: 8 + (_glowController.value * 5),
-                              color: Colors.white.withOpacity(0.6),
-                              offset: const Offset(0, 0),
-                            ),
-                          ]
-                        : isCurrentWord
-                        ? [
-                            const Shadow(
-                              blurRadius: 8,
-                              color: Colors.white,
-                              offset: Offset(0, 0),
-                            ),
-                          ]
-                        : [],
-                  ),
-                  child: Text('$word '),
-                ),
+              return _buildAnimatedWord(
+                word,
+                isCurrentWord,
+                isActiveWord,
+                isActive,
               );
             }).toList(),
           ),
@@ -242,174 +339,326 @@ class _LyricsOverlayState extends ConsumerState<LyricsOverlay>
     );
   }
 
+  Widget _buildAnimatedWord(
+    String word,
+    bool isCurrentWord,
+    bool isActiveWord,
+    bool isActive,
+  ) {
+    Color textColor;
+    double fontSize;
+    FontWeight fontWeight;
+    List<Shadow> shadows = [];
+
+    if (isActive) {
+      fontSize = 22;
+      fontWeight = FontWeight.w600;
+      if (isCurrentWord) {
+        textColor = Colors.white;
+        if (isActiveWord) {
+          shadows = _buildActiveWordShadows();
+        } else {
+          shadows = _buildCurrentWordShadows();
+        }
+      } else {
+        textColor = Colors.white.withOpacity(0.45);
+      }
+    } else {
+      fontSize = 18;
+      fontWeight = FontWeight.w400;
+      textColor = Colors.white.withOpacity(0.35);
+    }
+
+    return AnimatedContainer(
+      duration: _animationDuration,
+      curve: Curves.easeOutCubic,
+      transform: Matrix4.identity()
+        ..scale(isActiveWord ? 1.0 + (_scaleController.value * 0.08) : 1.0),
+      child: AnimatedDefaultTextStyle(
+        duration: _animationDuration,
+        curve: Curves.easeOutCubic,
+        style: _getBaseTextStyle().copyWith(
+          fontSize: fontSize,
+          fontWeight: fontWeight,
+          color: textColor,
+          shadows: shadows,
+        ),
+        child: Text(word),
+      ),
+    );
+  }
+
+  List<Shadow> _buildActiveWordShadows() {
+    final glowIntensity = 0.5 + (_wordGlowController.value * 0.5);
+    return [
+      Shadow(
+        blurRadius: 25 * glowIntensity,
+        color: Colors.cyan.withOpacity(0.9 * glowIntensity),
+        offset: Offset.zero,
+      ),
+      Shadow(
+        blurRadius: 15 * glowIntensity,
+        color: Colors.white.withOpacity(0.8 * glowIntensity),
+        offset: Offset.zero,
+      ),
+      Shadow(
+        blurRadius: 8 * glowIntensity,
+        color: Colors.blue.withOpacity(0.6 * glowIntensity),
+        offset: Offset.zero,
+      ),
+    ];
+  }
+
+  List<Shadow> _buildCurrentWordShadows() {
+    return [
+      Shadow(
+        blurRadius: 12,
+        color: Colors.white.withOpacity(0.7),
+        offset: Offset.zero,
+      ),
+      Shadow(
+        blurRadius: 6,
+        color: Colors.white.withOpacity(0.5),
+        offset: Offset.zero,
+      ),
+    ];
+  }
+
+  // Update the _buildLineByLineText method to use auto-scaling single line
+  Widget _buildLineByLineText(String text, bool isActive) {
+    if (text.trim().isEmpty) return const SizedBox.shrink();
+
+    return AnimatedBuilder(
+      animation: Listenable.merge([_glowController, _scaleController]),
+      builder: (context, child) {
+        final glowIntensity = 0.6 + (_glowController.value * 0.4);
+        final scale = isActive ? 1.0 + (_scaleController.value * 0.05) : 1.0;
+
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            width: overlaySize - (horizontalPadding * 2),
+            constraints: const BoxConstraints(minHeight: 50),
+            alignment: Alignment.center,
+            child: AnimatedDefaultTextStyle(
+              duration: _animationDuration,
+              curve: Curves.easeOutCubic,
+              style: _getBaseTextStyle().copyWith(
+                fontSize: isActive ? 22 : 18,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                color: isActive ? Colors.white : Colors.white.withOpacity(0.35),
+                shadows: isActive ? _buildLineGlowShadows(glowIntensity) : [],
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  text,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  List<Shadow> _buildLineGlowShadows(double glowIntensity) {
+    return [
+      Shadow(
+        blurRadius: 25 * glowIntensity,
+        color: Colors.cyan.withOpacity(0.8 * glowIntensity),
+        offset: Offset.zero,
+      ),
+      Shadow(
+        blurRadius: 15 * glowIntensity,
+        color: Colors.white.withOpacity(0.7 * glowIntensity),
+        offset: Offset.zero,
+      ),
+      Shadow(
+        blurRadius: 8 * glowIntensity,
+        color: Colors.blue.withOpacity(0.5 * glowIntensity),
+        offset: Offset.zero,
+      ),
+    ];
+  }
+
+  Widget _buildGradientOverlay(
+    AlignmentGeometry begin,
+    AlignmentGeometry end,
+    BorderRadius borderRadius,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: begin,
+          end: end,
+          colors: [
+            Colors.black.withOpacity(0.9),
+            Colors.black.withOpacity(0.7),
+            Colors.transparent,
+          ],
+          stops: const [0.0, 0.5, 1.0],
+        ),
+        borderRadius: borderRadius,
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return FadeTransition(
+      opacity: _appearController,
+      child: Container(
+        width: overlaySize,
+        height: overlaySize,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.7),
+              Colors.black.withOpacity(0.5),
+              Colors.black.withOpacity(0.7),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.music_note_outlined,
+                color: Colors.white.withOpacity(0.5),
+                size: 36,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'No lyrics available',
+                style: _getBaseTextStyle().copyWith(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final audioState = ref.watch(audioProvider);
     final lyrics = audioState.currentLyrics;
 
-    // Since this overlay is positioned within the 335x335 album art container,
-    // we'll set fixed dimensions to match the album art exactly
-    const double albumArtSize = 335.0;
-
-    // Calculate center offset based on the album art size
-    final centerOffset = (albumArtSize / 2) - (itemHeight / 2);
-
     if (lyrics.isEmpty) {
-      return Container(
-        width: albumArtSize,
-        height: albumArtSize,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: const Center(
-          child: Text(
-            'No lyrics available',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
-          ),
-        ),
-      );
+      return _buildEmptyState();
     }
 
-    return Container(
-      width: albumArtSize,
-      height: albumArtSize,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.black.withOpacity(0.7),
-            Colors.black.withOpacity(0.4),
-            Colors.black.withOpacity(0.7),
-          ],
+    final verticalPadding = (overlaySize / 2) - (itemHeight / 2);
+
+    return FadeTransition(
+      opacity: _appearController,
+      child: Container(
+        width: overlaySize,
+        height: overlaySize,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.8),
+              Colors.black.withOpacity(0.5),
+              Colors.black.withOpacity(0.8),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(color: Colors.white.withOpacity(0.15), width: 1),
         ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 1),
-      ),
-      child: Stack(
-        children: [
-          // Gradient overlays for fade effect
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 50,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.black.withOpacity(0.9), Colors.transparent],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: Stack(
+            children: [
+              // Main lyrics list
+              ListView.builder(
+                controller: _scrollController,
+                padding: EdgeInsets.symmetric(
+                  vertical: verticalPadding,
+                  horizontal: 8,
                 ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 50,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.bottomCenter,
-                  end: Alignment.topCenter,
-                  colors: [Colors.black.withOpacity(0.9), Colors.transparent],
-                ),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
-              ),
-            ),
-          ),
-          // Center highlight line - positioned at the exact center of the album art
-          Positioned(
-            top: centerOffset + (itemHeight / 2) - 1,
-            left: 20,
-            right: 20,
-            height: 2,
-            child: AnimatedBuilder(
-              animation: _glowController,
-              builder: (context, child) {
-                return Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.cyan.withOpacity(
-                          0.3 + (_glowController.value * 0.4),
-                        ),
-                        Colors.transparent,
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(1),
-                  ),
-                );
-              },
-            ),
-          ),
-          // Lyrics list with precise centering for album art
-          ListView.builder(
-            controller: _scrollController,
-            padding: EdgeInsets.symmetric(vertical: centerOffset),
-            itemCount: lyrics.length,
-            itemBuilder: (context, index) {
-              final line = lyrics[index];
-              final isActive = index == _currentIndex;
+                itemCount: lyrics.length,
+                physics: const BouncingScrollPhysics(),
+                itemBuilder: (context, index) {
+                  final line = lyrics[index];
+                  final isActive = index == _currentIndex;
 
-              return AnimatedBuilder(
-                animation: _scaleController,
-                builder: (context, child) {
-                  final scale = isActive
-                      ? 1.0 + (_scaleController.value * 0.05)
-                      : 1.0;
-
-                  return Transform.scale(
-                    scale: scale,
-                    child: GestureDetector(
-                      onTap: () => _onLineTap(index),
-                      behavior: HitTestBehavior.opaque,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 400),
-                        height: itemHeight,
-                        margin: const EdgeInsets.symmetric(horizontal: 10),
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 10,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? Colors.white.withOpacity(0.08)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          border: isActive
-                              ? Border.all(
-                                  color: Colors.cyan.withOpacity(0.3),
-                                  width: 1,
-                                )
-                              : null,
-                        ),
-                        child: Center(
-                          child: _buildWordByWordText(
-                            line.text,
-                            _currentWordIndex,
-                            isActive,
-                          ),
+                  return GestureDetector(
+                    onTap: () => _onLineTap(index),
+                    behavior: HitTestBehavior.opaque,
+                    child: Container(
+                      height: itemHeight,
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      padding: EdgeInsets.symmetric(
+                        vertical: verticalItemPadding,
+                        horizontal: horizontalPadding,
+                      ),
+                      child: Center(
+                        child: Consumer(
+                          builder: (context, ref, child) {
+                            final settings = ref.watch(settingsProvider);
+                            return settings.wordByWordLyrics
+                                ? _buildWordByWordText(
+                                    line.text,
+                                    _currentWordIndex,
+                                    isActive,
+                                  )
+                                : _buildLineByLineText(line.text, isActive);
+                          },
                         ),
                       ),
                     ),
                   );
                 },
-              );
-            },
+              ),
+
+              // Enhanced gradient overlays
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: gradientHeight,
+                child: _buildGradientOverlay(
+                  Alignment.topCenter,
+                  Alignment.bottomCenter,
+                  const BorderRadius.only(
+                    topLeft: Radius.circular(borderRadius),
+                    topRight: Radius.circular(borderRadius),
+                  ),
+                ),
+              ),
+
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: gradientHeight,
+                child: _buildGradientOverlay(
+                  Alignment.bottomCenter,
+                  Alignment.topCenter,
+                  const BorderRadius.only(
+                    bottomLeft: Radius.circular(borderRadius),
+                    bottomRight: Radius.circular(borderRadius),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

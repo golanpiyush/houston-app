@@ -1,32 +1,39 @@
-// models/settings.dart
 class AppSettings {
   final String themeMode;
   final String audioQuality;
-  final int limit;
   final String thumbnailQuality;
-  final bool downloadMode; // Add this field
+  final int limit;
+  final bool downloadMode;
+  final bool wordByWordLyrics;
+  final String lyricsFont; // Add this field
 
   AppSettings({
     required this.themeMode,
     required this.audioQuality,
+    required this.thumbnailQuality,
     required this.limit,
-    required this.thumbnailQuality, // <-- add this
-    required this.downloadMode, // Add to constructor
+    required this.downloadMode,
+    required this.wordByWordLyrics,
+    required this.lyricsFont, // Add this parameter
   });
 
   AppSettings copyWith({
     String? themeMode,
-    String? thumbnailQuality,
     String? audioQuality,
+    String? thumbnailQuality,
     int? limit,
     bool? downloadMode,
+    bool? wordByWordLyrics,
+    String? lyricsFont, // Add this parameter
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
-      thumbnailQuality: thumbnailQuality ?? this.thumbnailQuality,
-      downloadMode: downloadMode ?? this.downloadMode,
       audioQuality: audioQuality ?? this.audioQuality,
+      thumbnailQuality: thumbnailQuality ?? this.thumbnailQuality,
       limit: limit ?? this.limit,
+      downloadMode: downloadMode ?? this.downloadMode,
+      wordByWordLyrics: wordByWordLyrics ?? this.wordByWordLyrics,
+      lyricsFont: lyricsFont ?? this.lyricsFont, // Add this line
     );
   }
 }

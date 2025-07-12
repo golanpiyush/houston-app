@@ -10,15 +10,18 @@ final settingsProvider = StateNotifierProvider<SettingsNotifier, AppSettings>((
   return SettingsNotifier();
 });
 
+// 2. Update SettingsNotifier constructor and methods
 class SettingsNotifier extends StateNotifier<AppSettings> {
   SettingsNotifier()
     : super(
         AppSettings(
           themeMode: 'material',
-          audioQuality: AudioQuality.high.value, // "HIGH"
-          thumbnailQuality: ThumbnailQuality.veryHigh.value, // "VERY_HIGH"
+          audioQuality: AudioQuality.high.value,
+          thumbnailQuality: ThumbnailQuality.veryHigh.value,
           limit: 12,
-          downloadMode: false, // Add default download mode
+          downloadMode: false,
+          wordByWordLyrics: true,
+          lyricsFont: 'Poppins', // Default font
         ),
       ) {
     _loadSettings();
@@ -36,9 +39,45 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
           prefs.getString('thumbnail_quality') ??
           ThumbnailQuality.veryHigh.value,
       limit: validatedLimit,
-      downloadMode:
-          prefs.getBool('download_mode') ?? false, // Load download mode
+      downloadMode: prefs.getBool('download_mode') ?? false,
+      wordByWordLyrics: prefs.getBool('word_by_word_lyrics') ?? true,
+      lyricsFont:
+          prefs.getString('lyrics_font') ?? 'Poppins', // Load font setting
     );
+  }
+
+  static const List<String> availableFonts = [
+    'Poppins',
+    'Roboto',
+    'Open Sans',
+    'Montserrat',
+    'Lato',
+    'Nunito',
+    'Inter',
+    'Raleway',
+    'Playfair Display',
+    'Source Sans Pro',
+    'Oswald',
+    'Merriweather',
+    'Ubuntu',
+    'Fira Sans',
+    'Crimson Text',
+    'Libre Baskerville',
+    'PT Sans',
+    'Quicksand',
+    'Mukti',
+    'Dancing Script',
+    'Comfortaa',
+    'Pacifico',
+    'Caveat',
+    'Satisfy',
+    'Great Vibes',
+  ];
+
+  Future<void> updateLyricsFont(String font) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('lyrics_font', font);
+    state = state.copyWith(lyricsFont: font);
   }
 
   Future<void> updateTheme(String theme) async {
@@ -71,5 +110,12 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('download_mode', newValue);
     state = state.copyWith(downloadMode: newValue);
+  }
+
+  Future<void> toggleWordByWordLyrics() async {
+    final newValue = !state.wordByWordLyrics;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('word_by_word_lyrics', newValue);
+    state = state.copyWith(wordByWordLyrics: newValue);
   }
 }

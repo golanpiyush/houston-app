@@ -29,15 +29,22 @@ class _AnimatedAlbumArtState extends ConsumerState<AnimatedAlbumArt>
   late final Animation<double> _fadeAnimation;
   late final AnimationController _slideController;
   late final Animation<Offset> _slideAnimation;
+  late final AnimationController _lyricsController;
+  late final Animation<double> _lyricsAnimation;
+
   bool _isDismissing = false;
   bool _showLyrics = false;
-  // ignore: unused_field
   bool _lyricsLoading = false;
 
   // Cache variables
   String? _cachedImageUrl;
   Widget? _cachedImageWidget;
   bool _isLoading = false;
+
+  // Constants
+  static const double containerSize = 345.0;
+  static const double imageSize = 335.0;
+  static const double shadowMargin = 25.0;
 
   @override
   void initState() {
@@ -64,6 +71,15 @@ class _AnimatedAlbumArtState extends ConsumerState<AnimatedAlbumArt>
         Tween<Offset>(begin: Offset.zero, end: const Offset(0, 1.2)).animate(
           CurvedAnimation(parent: _slideController, curve: Curves.easeInOut),
         );
+
+    _lyricsController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _lyricsAnimation = CurvedAnimation(
+      parent: _lyricsController,
+      curve: Curves.easeOutCubic,
+    );
 
     if (!widget.isPlaying) {
       _fadeController.value = 1.0;
@@ -93,10 +109,12 @@ class _AnimatedAlbumArtState extends ConsumerState<AnimatedAlbumArt>
     return CachedNetworkImage(
       imageUrl: widget.imageUrl,
       fit: BoxFit.cover,
-      width: 350,
-      height: 350,
+      width: imageSize,
+      height: imageSize,
       placeholder: (_, __) => _buildPlaceholderWidget(),
       errorWidget: (_, __, ___) => _buildErrorWidget(),
+      fadeInDuration: const Duration(milliseconds: 300),
+      fadeOutDuration: const Duration(milliseconds: 300),
     );
   }
 
@@ -107,8 +125,8 @@ class _AnimatedAlbumArtState extends ConsumerState<AnimatedAlbumArt>
           ? Image.file(
               File(widget.imageUrl),
               fit: BoxFit.cover,
-              width: 350,
-              height: 350,
+              width: imageSize,
+              height: imageSize,
               errorBuilder: (_, __, ___) => _buildErrorWidget(),
             )
           : _buildErrorWidget();
@@ -137,6 +155,7 @@ class _AnimatedAlbumArtState extends ConsumerState<AnimatedAlbumArt>
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _lyricsController.dispose();
     super.dispose();
   }
 
@@ -152,6 +171,8 @@ class _AnimatedAlbumArtState extends ConsumerState<AnimatedAlbumArt>
           _showLyrics = true;
         });
 
+        _lyricsController.forward();
+
         final song = ref.read(audioProvider).currentSong;
         if (song != null) {
           try {
@@ -166,21 +187,17 @@ class _AnimatedAlbumArtState extends ConsumerState<AnimatedAlbumArt>
               ref.read(audioProvider.notifier).setLyrics(parsed);
             }
           } catch (e) {
-            print('Error loading lyrics: $e');
+            debugPrint('Error loading lyrics: $e');
           }
         }
 
-        setState(() {
-          _lyricsLoading = false;
-        });
-
-        _fadeController.forward(); // fade in lyrics
+        setState(() => _lyricsLoading = false);
       }
     } else if (velocity > 300) {
       // Swipe down: Hide lyrics / dismiss
       if (_showLyrics) {
         setState(() => _showLyrics = false);
-        _fadeController.reverse(); // fade out lyrics
+        _lyricsController.reverse();
       } else {
         _isDismissing = true;
         _slideController.forward().then((_) {
@@ -193,20 +210,140 @@ class _AnimatedAlbumArtState extends ConsumerState<AnimatedAlbumArt>
   Widget _buildPlaceholderWidget() {
     return Container(
       color: Colors.grey[800],
-      width: 350,
-      height: 350,
-      child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      width: imageSize,
+      height: imageSize,
+      child: Center(
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          valueColor: AlwaysStoppedAnimation<Color>(
+            widget.shadowColor.withOpacity(0.8),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildErrorWidget() {
     return Container(
       color: Colors.grey[900],
-      width: 350,
-      height: 350,
+      width: imageSize,
+      height: imageSize,
       child: const Center(
         child: Icon(Icons.broken_image, color: Colors.white38, size: 48),
       ),
+    );
+  }
+
+  Widget _buildShadowContainer() {
+    return Positioned.fill(
+      child: Container(
+        margin: const EdgeInsets.all(shadowMargin),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            // Primary vibrant shadow
+            BoxShadow(
+              color: widget.shadowColor.withOpacity(0.7),
+              blurRadius: 60,
+              spreadRadius: 20,
+              offset: const Offset(0, 25),
+            ),
+            // Secondary glow effect
+            BoxShadow(
+              color: widget.shadowColor.withOpacity(0.4),
+              blurRadius: 40,
+              spreadRadius: 10,
+              offset: const Offset(0, 15),
+            ),
+            // Subtle inner glow
+            BoxShadow(
+              color: widget.shadowColor.withOpacity(0.2),
+              blurRadius: 20,
+              spreadRadius: 5,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageContainer() {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+      width: imageSize,
+      height: imageSize,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: widget.shadowColor.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: _isLoading
+            ? _buildPlaceholderWidget()
+            : _cachedImageWidget ?? _buildErrorWidget(),
+      ),
+    );
+  }
+
+  Widget _buildOverlayStack() {
+    return Stack(
+      children: [
+        // Fade overlay when paused
+        FadeTransition(
+          opacity: _fadeAnimation,
+          child: Container(
+            width: imageSize,
+            height: imageSize,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(24),
+            ),
+          ),
+        ),
+        // Lyrics overlay with fade transition
+        if (_showLyrics)
+          FadeTransition(
+            opacity: _lyricsAnimation,
+            child: const LyricsOverlay(),
+          ),
+        // Loading indicator for lyrics
+        if (_lyricsLoading)
+          Container(
+            width: imageSize,
+            height: imageSize,
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.7),
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      widget.shadowColor.withOpacity(0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Loading lyrics...',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -219,82 +356,20 @@ class _AnimatedAlbumArtState extends ConsumerState<AnimatedAlbumArt>
       child: SlideTransition(
         position: _slideAnimation,
         child: SizedBox(
-          width: 345,
-          height: 345,
+          width: containerSize,
+          height: containerSize,
           child: Stack(
-            clipBehavior: Clip.none, // Important for shadow visibility
+            clipBehavior: Clip.none,
             alignment: Alignment.center,
             children: [
-              // Enhanced shadow container with multiple layers
-              Positioned.fill(
-                child: Container(
-                  margin: const EdgeInsets.all(25), // More space for shadow
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      // Primary vibrant shadow
-                      BoxShadow(
-                        color: widget.shadowColor.withOpacity(0.7),
-                        blurRadius: 60,
-                        spreadRadius: 20,
-                        offset: const Offset(0, 25),
-                      ),
-                      // Secondary glow effect
-                      BoxShadow(
-                        color: widget.shadowColor.withOpacity(0.4),
-                        blurRadius: 40,
-                        spreadRadius: 10,
-                        offset: const Offset(0, 15),
-                      ),
-                      // Subtle inner glow
-                      BoxShadow(
-                        color: widget.shadowColor.withOpacity(0.2),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              // Enhanced shadow container
+              _buildShadowContainer(),
+
               // Image container
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 500),
-                curve: Curves.easeInOut,
-                width: 335, // Smaller than container to show shadow
-                height: 335,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  // Add a subtle border to enhance the effect
-                  border: Border.all(
-                    color: widget.shadowColor.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24),
-                  child: _isLoading
-                      ? _buildPlaceholderWidget()
-                      : _cachedImageWidget ?? _buildErrorWidget(),
-                ),
-              ),
-              // Fade overlay when paused
-              Stack(
-                children: [
-                  FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: Container(
-                      width: 335,
-                      height: 335,
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                    ),
-                  ),
-                  if (_showLyrics) const LyricsOverlay(),
-                ],
-              ),
+              _buildImageContainer(),
+
+              // Overlay stack (fade overlay + lyrics)
+              _buildOverlayStack(),
             ],
           ),
         ),

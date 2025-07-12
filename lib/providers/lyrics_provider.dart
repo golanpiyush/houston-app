@@ -31,7 +31,7 @@ class LyricsProvider {
     int duration = -1,
   }) async {
     final keyword = '$title - $artist';
-    print("Title Lyrics Searching: $title");
+    print("Tile Lyrics Searching: $title");
     print("Artists Lyrics Searching: $artist");
     final searchResponse = await client.get(
       Uri.https('mobileservice.kugou.com', '/api/v3/search/song', {

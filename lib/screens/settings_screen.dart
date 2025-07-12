@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/settings_provider.dart';
 
@@ -25,6 +26,64 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     setState(() {
       _packageInfo = packageInfo;
     });
+  }
+
+  // 5. Helper method to get Google Font
+  TextStyle _getGoogleFont(String fontName) {
+    switch (fontName) {
+      case 'Poppins':
+        return GoogleFonts.poppins();
+      case 'Roboto':
+        return GoogleFonts.roboto();
+      case 'Open Sans':
+        return GoogleFonts.openSans();
+      case 'Montserrat':
+        return GoogleFonts.montserrat();
+      case 'Lato':
+        return GoogleFonts.lato();
+      case 'Nunito':
+        return GoogleFonts.nunito();
+      case 'Inter':
+        return GoogleFonts.inter();
+      case 'Raleway':
+        return GoogleFonts.raleway();
+      case 'Playfair Display':
+        return GoogleFonts.playfairDisplay();
+      case 'Luckiest Guy':
+        return GoogleFonts.luckiestGuy();
+      case 'Oswald':
+        return GoogleFonts.oswald();
+      case 'Merriweather':
+        return GoogleFonts.merriweather();
+      case 'Ubuntu':
+        return GoogleFonts.ubuntu();
+      case 'Fira Sans':
+        return GoogleFonts.firaSans();
+      case 'Crimson Text':
+        return GoogleFonts.crimsonText();
+      case 'Libre Baskerville':
+        return GoogleFonts.libreBaskerville();
+      case 'PT Sans':
+        return GoogleFonts.ptSans();
+      case 'Quicksand':
+        return GoogleFonts.quicksand();
+      case 'Caveat':
+        return GoogleFonts.caveat();
+      case 'Dancing Script':
+        return GoogleFonts.dancingScript();
+      case 'Comfortaa':
+        return GoogleFonts.comfortaa();
+      case 'Pacifico':
+        return GoogleFonts.pacifico();
+      case 'Caveat':
+        return GoogleFonts.caveat();
+      case 'Satisfy':
+        return GoogleFonts.satisfy();
+      case 'Great Vibes':
+        return GoogleFonts.greatVibes();
+      default:
+        return GoogleFonts.poppins();
+    }
   }
 
   Future<void> _checkForUpdate(BuildContext context) async {
@@ -146,6 +205,140 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             : "Only metadata will be saved",
                       );
                     },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Lyrics Display',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    title: const Text('Word-by-word lyrics'),
+                    subtitle: const Text(
+                      'Show lyrics word by word with highlighting. Disable for line-by-line display.',
+                    ),
+                    value: settings.wordByWordLyrics,
+                    onChanged: (value) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .toggleWordByWordLyrics();
+                      Fluttertoast.showToast(
+                        msg: value
+                            ? "Word-by-word lyrics enabled"
+                            : "Line-by-line lyrics enabled",
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // 4. Enhanced UI Card with font selector
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Lyrics Display',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    title: const Text('Word-by-word lyrics'),
+                    subtitle: const Text(
+                      'Show lyrics word by word with highlighting. Disable for line-by-line display.',
+                    ),
+                    value: settings.wordByWordLyrics,
+                    onChanged: (value) {
+                      ref
+                          .read(settingsProvider.notifier)
+                          .toggleWordByWordLyrics();
+                      Fluttertoast.showToast(
+                        msg: value
+                            ? "Word-by-word lyrics enabled"
+                            : "Line-by-line lyrics enabled",
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Lyrics Font',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButton<String>(
+                      value: settings.lyricsFont,
+                      isExpanded: true,
+                      underline: const SizedBox(),
+                      items: SettingsNotifier.availableFonts.map((String font) {
+                        return DropdownMenuItem<String>(
+                          value: font,
+                          child: Text(
+                            font,
+                            style: _getGoogleFont(font).copyWith(fontSize: 16),
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (String? newFont) {
+                        if (newFont != null) {
+                          ref
+                              .read(settingsProvider.notifier)
+                              .updateLyricsFont(newFont);
+                          Fluttertoast.showToast(
+                            msg: "Lyrics font changed to $newFont",
+                          );
+                        }
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  // Font preview
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Preview:',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Your lyrics will look like this',
+                          style: _getGoogleFont(
+                            settings.lyricsFont,
+                          ).copyWith(fontSize: 18, fontWeight: FontWeight.w500),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
