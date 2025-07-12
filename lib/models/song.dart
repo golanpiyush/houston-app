@@ -19,4 +19,14 @@ class Song {
     this.audioUrl,
     this.isOriginal,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Song &&
+          runtimeType == other.runtimeType &&
+          audioUrl == other.audioUrl;
+
+  @override
+  int get hashCode => audioUrl.hashCode;
 }

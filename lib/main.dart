@@ -1,16 +1,26 @@
-// main.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:houston/widgets/update_wrapper.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'providers/settings_provider.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.example.houston.audio',
+    androidNotificationChannelName: 'Houston Audio Playback',
+    androidNotificationOngoing: true,
+
+    androidNotificationIcon: 'mipmap/ic_launcher', // ✅ using default app icon
+  );
+
   runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends ConsumerWidget {
-  const MyApp({Key? key}) : super(key: key);
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -67,7 +77,7 @@ class MyApp extends ConsumerWidget {
           colorScheme: ColorScheme.fromSeed(
             seedColor: Colors.blue,
             brightness: Brightness.dark,
-          ).copyWith(background: Colors.black, surface: Colors.black),
+          ).copyWith(surface: Colors.black),
           useMaterial3: true,
         );
       default:

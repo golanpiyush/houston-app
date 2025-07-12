@@ -11,7 +11,7 @@ import 'settings_screen.dart';
 import '../providers/audio_provider.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
-  const MainScreen({Key? key}) : super(key: key);
+  const MainScreen({super.key});
 
   @override
   ConsumerState<MainScreen> createState() => _MainScreenState();

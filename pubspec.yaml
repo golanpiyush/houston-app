@@ -30,6 +30,13 @@ dependencies:
   package_info_plus:
   flutter_markdown:
   icons_plus:
+  palette_generator:
+  google_fonts:
+  material_symbols_icons:
+  just_audio_background:
+  audio_service:
+  dio:
+  http:
   
   cupertino_icons: ^1.0.8
 

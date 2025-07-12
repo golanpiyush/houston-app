@@ -77,7 +77,7 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
     String query, {
     int limit = 25,
     String audioQuality = 'high',
-    String thumbnailQuality = 'high',
+    String thumbnailQuality = 'very_high',
   }) async {
     if (state.isLoading || !state.isInitialized) return;
 

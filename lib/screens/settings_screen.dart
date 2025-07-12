@@ -1,21 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/settings_provider.dart';
 
-class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({Key? key}) : super(key: key);
+class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({super.key});
 
-  void _showToast(String msg) {
-    Fluttertoast.showToast(
-      msg: msg,
-      toastLength: Toast.LENGTH_SHORT,
-      gravity: ToastGravity.BOTTOM,
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  PackageInfo? _packageInfo;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPackageInfo();
+  }
+
+  Future<void> _loadPackageInfo() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _packageInfo = packageInfo;
+    });
+  }
+
+  Future<void> _checkForUpdate(BuildContext context) async {
+    // Show loading indicator
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
+
+    // Simulate checking for updates (replace with actual update logic)
+    await Future.delayed(const Duration(seconds: 2));
+
+    // Close loading dialog
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+
+    // Show update result
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Update Check'),
+          content: const Text('You are using the latest version!'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final settings = ref.watch(settingsProvider);
 
     return Scaffold(
@@ -74,6 +121,37 @@ class SettingsScreen extends ConsumerWidget {
 
           const SizedBox(height: 16),
 
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Download Settings',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    title: const Text('Download when saving'),
+                    subtitle: const Text(
+                      'Automatically download songs when you save them',
+                    ),
+                    value: settings.downloadMode,
+                    onChanged: (value) {
+                      ref.read(settingsProvider.notifier).toggleDownloadMode();
+                      Fluttertoast.showToast(
+                        msg: value
+                            ? "Downloads will be saved automatically"
+                            : "Only metadata will be saved",
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           // Audio Quality
           Card(
             child: Padding(
@@ -212,6 +290,101 @@ class SettingsScreen extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Version Info Card
+          Card(
+            child: InkWell(
+              onTap: () => _checkForUpdate(context),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.info_outline, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Version Information',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          Icons.system_update,
+                          size: 20,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    if (_packageInfo != null) ...[
+                      _buildVersionRow(
+                        'Build Number',
+                        _packageInfo!.buildNumber,
+                      ),
+                      _buildVersionRow('Version', _packageInfo!.version),
+
+                      // _buildVersionRow(
+                      //   'Package Name',
+                      //   _packageInfo!.packageName,
+                      // ),
+                    ] else ...[
+                      const Center(
+                        child: SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Tap to check for updates',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVersionRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 100,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.grey,
+              ),
+            ),
+          ),
+          const Text(': '),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontWeight: FontWeight.w500),
             ),
           ),
         ],

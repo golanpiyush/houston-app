@@ -17,7 +17,8 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
           themeMode: 'material',
           audioQuality: AudioQuality.high.value, // "HIGH"
           thumbnailQuality: ThumbnailQuality.veryHigh.value, // "VERY_HIGH"
-          limit: 10,
+          limit: 12,
+          downloadMode: false, // Add default download mode
         ),
       ) {
     _loadSettings();
@@ -35,6 +36,8 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
           prefs.getString('thumbnail_quality') ??
           ThumbnailQuality.veryHigh.value,
       limit: validatedLimit,
+      downloadMode:
+          prefs.getBool('download_mode') ?? false, // Load download mode
     );
   }
 
@@ -58,10 +61,15 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   Future<void> updateLimit(int limit) async {
     final validatedLimit = limit.clamp(2, 12);
-
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('limit', validatedLimit);
-
     state = state.copyWith(limit: validatedLimit);
+  }
+
+  Future<void> toggleDownloadMode() async {
+    final newValue = !state.downloadMode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('download_mode', newValue);
+    state = state.copyWith(downloadMode: newValue);
   }
 }
