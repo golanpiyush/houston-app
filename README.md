@@ -52,8 +52,8 @@ Houston is a powerful fork inspired by OuterTune and InnerTune, reimagined with 
 
 ## 🛠 Maintainers Wanted
 
-Interested in helping improve Houston? Contact us at:  
-📩 `houstonplayer@protonmail.com`
+Interested in helping improve Houston? Contact me at:  
+📩 `golanpiyush@gmail.com`
 
 ---
 
