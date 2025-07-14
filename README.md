@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.png" width="120" height="120" alt="Houston Logo"/>
+  <img src="assets/icons/icon_launcher.png" width="120" height="120" alt="Houston Logo"/>
 </p>
 
 <h1 align="center">Houston</h1>
