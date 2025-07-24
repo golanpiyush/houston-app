@@ -1,0 +1,91 @@
+name: houston
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+
+version: 1.2.0+1
+
+environment:
+  sdk: ^3.8.1
+
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+
+  yt_flutter_musicapi: ^3.3.4
+  just_audio:
+  # media_kit: TO-DO*
+  # media_kit_libs_audio: TO-DO*
+  gradient_mini_music_visualizer: ^1.0.0+1
+  shimmer:
+  animated_icon: ^0.0.9
+  color_palette_generator:
+  shared_preferences:
+  dynamic_color:
+  flutter_riverpod:
+  animated_bottom_navigation_bar:
+  cached_network_image:
+  fluttertoast:
+  lottie:
+  wikipedia:
+  url_launcher:
+  package_info_plus:
+  flutter_markdown:
+  icons_plus:
+  palette_generator:
+  google_fonts:
+  material_symbols_icons:
+  just_audio_background:
+  audio_service:
+  dio:
+  http:
+  open_file:
+  # android_intent_plus:
+  permission_handler:
+  device_info_plus:
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons:
+
+  
+  flutter_lints: ^5.0.0
+
+flutter_icons:
+  android: true
+  image_path: "assets/icons/icon_laucherRaw.png" # your icon path here
+  min_sdk_android: 24
+  adaptive_icon_background: "#ffffff"  # background color for adaptive icon
+  adaptive_icon_foreground: "assets/icons/icon_laucherRaw.png"  # foreground image
+
+flutter:
+
+  
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - assets/animations/loadingHome.json
+    - assets/animations/search_animation.json
+    - assets/animations/downloadingHoustonUpdates.json
+  #   - images/a_dot_ham.jpeg
+
+  
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Internal app storage -->
+    <files-path name="files" path="." />
+    
+    <!-- App's private cache directory -->
+    <cache-path name="cache" path="." />
+    
+    <!-- App's private files directory on external storage -->
+    <external-files-path name="external_files" path="." />
+    
+    <!-- App's private cache directory on external storage -->
+    <external-cache-path name="external_cache" path="." />
+    
+    <!-- Shared external storage (be careful with this) -->
+    <external-path name="external_storage" path="." />
+    
+    <!-- Flutter app directory specifically -->
+    <files-path name="flutter_app" path="flutter/" />
+    
+    <!-- Root access (use sparingly) -->
+    <root-path name="root" path="." />
+</paths>
