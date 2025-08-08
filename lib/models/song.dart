@@ -1,5 +1,7 @@
 // models/ytmusic_models.dart
-import 'package:yt_flutter_musicapi/yt_flutter_musicapi.dart';
+import 'package:yt_flutter_musicapi/models/artistsStreamModel.dart';
+import 'package:yt_flutter_musicapi/models/relatedSongModel.dart';
+import 'package:yt_flutter_musicapi/models/searchModel.dart';
 
 class Song {
   final String title;
@@ -90,7 +92,7 @@ class SystemStatus {
 
   String get statusSummary {
     if (isFullyOperational) {
-      return 'All systems operational';
+      return "Houston's engine warmed up 🔥";
     } else if (ytmusicReady || ytdlpReady) {
       return 'Partial functionality available';
     } else {

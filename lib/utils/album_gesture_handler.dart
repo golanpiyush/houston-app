@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:houston/models/lyrics_model.dart';
 import 'package:houston/providers/lyrics_provider.dart';
-import '../providers/audio_state_provider.dart';
+import 'package:houston/providers/lyrics_provider_provider.dart';
+import 'package:houston/providers/settings_provider.dart';
+import '../providers/audio/audio_state_provider.dart';
 
 class AlbumArtGestureHandler {
   final BuildContext context;
@@ -11,13 +13,16 @@ class AlbumArtGestureHandler {
   final AnimationController lyricsController;
   final VoidCallback onLyricsLoadingChanged;
   final VoidCallback onLyricsVisibilityChanged;
+  final LyricsProvider lyricsProvider;
+
+  // ADDED: Callback to force UI rebuild
+  final VoidCallback? onSongChanged;
 
   bool _isDismissing = false;
   bool _isProcessingGesture = false;
 
   // Gesture sensitivity thresholds
-  static const double _velocityThreshold =
-      200.0; // Reduced for better sensitivity
+  static const double _velocityThreshold = 200.0;
 
   AlbumArtGestureHandler({
     required this.context,
@@ -26,6 +31,8 @@ class AlbumArtGestureHandler {
     required this.lyricsController,
     required this.onLyricsLoadingChanged,
     required this.onLyricsVisibilityChanged,
+    this.onSongChanged, // ADDED: Optional callback for song changes
+    required this.lyricsProvider,
   });
 
   /// Handles vertical swipe gestures (up/down)
@@ -54,16 +61,13 @@ class AlbumArtGestureHandler {
     try {
       if (isSwipeUp && !showLyrics) {
         debugPrint('Showing lyrics');
-        // Swipe up: Show lyrics
         await _showLyrics();
       } else if (isSwipeDown) {
         if (showLyrics) {
           debugPrint('Hiding lyrics');
-          // Swipe down: Hide lyrics
           await _hideLyrics();
         } else {
           debugPrint('Dismissing screen');
-          // Swipe down: Dismiss screen
           await _dismissScreen();
         }
       }
@@ -97,12 +101,10 @@ class AlbumArtGestureHandler {
 
     try {
       if (isSwipeLeft) {
-        debugPrint('Next song');
-        // Swipe left: Next song
+        debugPrint('Next song gesture detected');
         await _nextSong();
       } else if (isSwipeRight) {
-        debugPrint('Previous song');
-        // Swipe right: Previous song
+        debugPrint('Previous song gesture detected');
         await _previousSong();
       }
     } finally {
@@ -128,8 +130,110 @@ class AlbumArtGestureHandler {
   void handleSingleTap() {
     if (_isDismissing || _isProcessingGesture) return;
 
+    debugPrint('Single tap - toggling play/pause');
     // Toggle play/pause
     ref.read(audioProvider.notifier).pauseResume();
+  }
+
+  Future<void> _showLyricsAlternative() async {
+    onLyricsVisibilityChanged();
+    onLyricsLoadingChanged();
+
+    // Start lyrics animation
+    await lyricsController.forward();
+
+    // Fetch lyrics using direct approach
+    final song = ref.read(audioProvider).currentSong;
+    if (song != null) {
+      // Get current settings and create fresh provider
+      final settings = ref.read(settingsProvider);
+
+      print(
+        'GESTURE_HANDLER: Current settings source: ${settings.lyricsProvider}',
+      );
+
+      final freshLyricsProvider = LyricsProvider();
+      freshLyricsProvider.selectedSource = settings.lyricsProvider;
+
+      print(
+        'GESTURE_HANDLER: Created provider with source: ${freshLyricsProvider.selectedSource}',
+      );
+
+      try {
+        final result = await freshLyricsProvider.fetchLyrics(
+          song.title,
+          song.artists,
+        );
+
+        print('GESTURE_HANDLER: Lyrics fetch result: ${result['success']}');
+
+        if (result['success']) {
+          final parsed = (result['lines'] as List)
+              .map((e) => LyricsLine.fromMap(e))
+              .toList();
+          ref.read(audioProvider.notifier).setLyrics(parsed);
+          print(
+            'GESTURE_HANDLER: Successfully set ${parsed.length} lyrics lines',
+          );
+        } else {
+          print('GESTURE_HANDLER: Failed to fetch lyrics: ${result['error']}');
+        }
+      } catch (e) {
+        debugPrint('Error loading lyrics: $e');
+      } finally {
+        freshLyricsProvider.dispose(); // Important: Clean up
+      }
+    } else {
+      print('GESTURE_HANDLER: No current song available');
+    }
+
+    onLyricsLoadingChanged();
+  }
+
+  static Future<Map<String, dynamic>> fetchLyricsWithFreshProvider(
+    WidgetRef ref,
+    String title,
+    String artist, {
+    int duration = -1,
+  }) async {
+    // Invalidate and get fresh provider
+    ref.invalidate(lyricsProviderProvider);
+    final lyricsProvider = ref.read(lyricsProviderProvider);
+
+    print(
+      'GESTURE_HANDLER: Using FRESH provider with source: ${lyricsProvider.selectedSource}',
+    );
+
+    // Use the fresh provider to fetch lyrics
+    return await lyricsProvider.fetchLyrics(title, artist, duration: duration);
+  }
+
+  // Alternative: Create a completely fresh provider instance
+  static Future<Map<String, dynamic>> fetchLyricsAlternative(
+    WidgetRef ref,
+    String title,
+    String artist, {
+    int duration = -1,
+  }) async {
+    // Create a completely new provider instance that reads current settings
+    final settings = ref.read(settingsProvider);
+    final freshProvider = LyricsProvider();
+    freshProvider.selectedSource = settings.lyricsProvider;
+
+    print(
+      'GESTURE_HANDLER: Created FRESH provider with source: ${freshProvider.selectedSource}',
+    );
+
+    try {
+      final result = await freshProvider.fetchLyrics(
+        title,
+        artist,
+        duration: duration,
+      );
+      return result;
+    } finally {
+      freshProvider.dispose(); // Clean up
+    }
   }
 
   /// Shows lyrics with loading state
@@ -140,25 +244,39 @@ class AlbumArtGestureHandler {
     // Start lyrics animation
     await lyricsController.forward();
 
-    // Fetch lyrics
+    // Fetch lyrics using the fresh provider
     final song = ref.read(audioProvider).currentSong;
     if (song != null) {
       try {
-        final result = await LyricsProvider().fetchLyrics(
+        print(
+          'GESTURE_HANDLER: Starting lyrics fetch for: ${song.title} by ${song.artists}',
+        );
+
+        // Use the static method with fresh provider
+        final result = await fetchLyricsAlternative(
+          ref,
           song.title,
           song.artists,
         );
+
+        print('GESTURE_HANDLER: Lyrics fetch result: ${result['success']}');
 
         if (result['success']) {
           final parsed = (result['lines'] as List)
               .map((e) => LyricsLine.fromMap(e))
               .toList();
           ref.read(audioProvider.notifier).setLyrics(parsed);
+          print(
+            'GESTURE_HANDLER: Successfully set ${parsed.length} lyrics lines',
+          );
+        } else {
+          print('GESTURE_HANDLER: Failed to fetch lyrics: ${result['error']}');
         }
       } catch (e) {
         debugPrint('Error loading lyrics: $e');
-        // Show error message or fallback
       }
+    } else {
+      print('GESTURE_HANDLER: No current song available');
     }
 
     onLyricsLoadingChanged();
@@ -187,21 +305,81 @@ class AlbumArtGestureHandler {
     }
   }
 
-  /// Plays next song
+  /// Plays next song - FIXED
   Future<void> _nextSong() async {
     try {
+      debugPrint('🎵 Gesture handler: Calling playNext()');
+
+      // Get current song before the change
+      final currentSong = ref.read(audioProvider).currentSong;
+      debugPrint('🎵 Current song before next: ${currentSong?.title}');
+
+      // Call the audio provider method
       await ref.read(audioProvider.notifier).playNext();
+
+      // Wait a moment for state to update
+      await Future.delayed(Duration(milliseconds: 100));
+
+      // Get the new current song
+      final newSong = ref.read(audioProvider).currentSong;
+      debugPrint('🎵 New song after next: ${newSong?.title}');
+
+      // FIXED: Force UI update by triggering callback
+      if (onSongChanged != null) {
+        debugPrint('🎵 Triggering onSongChanged callback');
+        onSongChanged!();
+      }
+
+      // FIXED: Additional state refresh to ensure UI updates
+      if (context.mounted) {
+        // Force a rebuild by invalidating the provider temporarily
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            ref.invalidate(audioProvider);
+          }
+        });
+      }
     } catch (e) {
-      debugPrint('Error playing next song: $e');
+      debugPrint('❌ Error in gesture handler playNext: $e');
     }
   }
 
-  /// Plays previous song
+  /// Plays previous song - FIXED
   Future<void> _previousSong() async {
     try {
+      debugPrint('🎵 Gesture handler: Calling playPrevious()');
+
+      // Get current song before the change
+      final currentSong = ref.read(audioProvider).currentSong;
+      debugPrint('🎵 Current song before previous: ${currentSong?.title}');
+
+      // Call the audio provider method
       await ref.read(audioProvider.notifier).playPrevious();
+
+      // Wait a moment for state to update
+      await Future.delayed(Duration(milliseconds: 100));
+
+      // Get the new current song
+      final newSong = ref.read(audioProvider).currentSong;
+      debugPrint('🎵 New song after previous: ${newSong?.title}');
+
+      // FIXED: Force UI update by triggering callback
+      if (onSongChanged != null) {
+        debugPrint('🎵 Triggering onSongChanged callback');
+        onSongChanged!();
+      }
+
+      // FIXED: Additional state refresh to ensure UI updates
+      if (context.mounted) {
+        // Force a rebuild by invalidating the provider temporarily
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            ref.invalidate(audioProvider);
+          }
+        });
+      }
     } catch (e) {
-      debugPrint('Error playing previous song: $e');
+      debugPrint('❌ Error in gesture handler playPrevious: $e');
     }
   }
 
@@ -239,7 +417,6 @@ class AlbumArtGestureHandler {
       handleVerticalSwipe(details, showLyrics);
     } else {
       debugPrint('Ambiguous gesture - defaulting to vertical');
-      // For ambiguous gestures, default to vertical
       handleVerticalSwipe(details, showLyrics);
     }
   }

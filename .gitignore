@@ -14,6 +14,9 @@ migrate_working_dir/
 android/app/release-key.jks
 android/app/keystore.jks
 
+lib/python.py
+testpython.py
+
 # IntelliJ related
 *.iml
 *.ipr

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:houston/models/song.dart';
+import 'package:yt_flutter_musicapi/models/audioUrlresultsModel.dart';
 import 'package:yt_flutter_musicapi/yt_flutter_musicapi.dart' hide SystemStatus;
 
 final ytMusicProvider = StateNotifierProvider<YtMusicNotifier, YtMusicState>((
@@ -61,6 +62,9 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
   StreamSubscription? _artistSubscription;
   StreamSubscription? _relatedSubscription;
 
+  // Add a flag to track if the notifier is disposed
+  bool _isDisposed = false;
+
   YtMusicNotifier()
     : super(
         YtMusicState(
@@ -76,6 +80,7 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _cancelAllStreams();
     super.dispose();
   }
@@ -90,20 +95,26 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
     _artistSubscription = null;
     _relatedSubscription = null;
 
-    // Only update streaming state, don't clear loading state here
-    // as new streams might be starting
-    if (state.isStreaming) {
+    // Only update streaming state if not disposed and state is still streaming
+    if (!_isDisposed && state.isStreaming) {
       state = state.copyWith(isStreaming: false);
     }
   }
 
+  // Helper method to check if we should update state
+  bool _canUpdateState() {
+    return !_isDisposed && mounted;
+  }
+
   Future<void> _initializeApi() async {
-    if (state.isLoading) return;
+    if (!_canUpdateState() || state.isLoading) return;
 
     state = state.copyWith(isLoading: true);
 
     try {
       final response = await _api.initialize(country: 'US');
+
+      if (!_canUpdateState()) return;
 
       if (response.success) {
         state = state.copyWith(
@@ -119,14 +130,21 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
         );
       }
     } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
+      if (_canUpdateState()) {
+        state = state.copyWith(isLoading: false, error: e.toString());
+      }
     }
   }
 
   Future<void> checkStatus() async {
+    if (!_canUpdateState()) return;
+
     state = state.copyWith(isLoading: true);
     try {
       final response = await _api.checkStatus();
+
+      if (!_canUpdateState()) return;
+
       if (response.success && response.data != null) {
         // Convert the plugin's SystemStatus to our local model
         final pluginStatus = response.data!;
@@ -151,10 +169,12 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
         );
       }
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: 'Error checking system status: ${e.toString()}',
-      );
+      if (_canUpdateState()) {
+        state = state.copyWith(
+          isLoading: false,
+          error: 'Error checking system status: ${e.toString()}',
+        );
+      }
     }
   }
 
@@ -163,10 +183,9 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
     required String query,
     int limit = 25,
     String audioQuality = 'very_high',
-    String thumbnailQuality = 'very_high',
     BuildContext? context,
   }) {
-    if (!state.isInitialized) return;
+    if (!state.isInitialized || !_canUpdateState()) return;
 
     // Cancel existing streams first
     _cancelAllStreams();
@@ -183,15 +202,14 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
         query: query,
         limit: limit,
         audioQuality: _getAudioQuality(audioQuality),
-        thumbQuality: _getThumbnailQuality(thumbnailQuality),
         includeAudioUrl: true,
         includeAlbumArt: true,
       );
 
       _searchSubscription = stream.listen(
         (item) {
-          // Check if this subscription is still active
-          if (_searchSubscription != null) {
+          // Check if this subscription is still active AND we can update state
+          if (_searchSubscription != null && _canUpdateState()) {
             final song = Song.fromSearchResult(item);
             state = state.copyWith(
               searchResults: [...state.searchResults, song],
@@ -199,9 +217,9 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
           }
         },
         onError: (error) {
-          // Only handle error if subscription is still active
-          if (_searchSubscription != null) {
-            if (context != null) {
+          // Only handle error if subscription is still active AND we can update state
+          if (_searchSubscription != null && _canUpdateState()) {
+            if (context != null && context.mounted) {
               _showErrorToast(context, 'Search error: $error');
             }
             debugPrint('Search error: $error');
@@ -213,22 +231,24 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
           }
         },
         onDone: () {
-          // Only update state if subscription is still active
-          if (_searchSubscription != null) {
+          // Only update state if subscription is still active AND we can update state
+          if (_searchSubscription != null && _canUpdateState()) {
             state = state.copyWith(isLoading: false, isStreaming: false);
           }
         },
       );
     } catch (e) {
-      if (context != null) {
+      if (context != null && context.mounted) {
         _showErrorToast(context, 'Error starting search: $e');
       }
       debugPrint('Error starting search: $e');
-      state = state.copyWith(
-        isLoading: false,
-        isStreaming: false,
-        error: e.toString(),
-      );
+      if (_canUpdateState()) {
+        state = state.copyWith(
+          isLoading: false,
+          isStreaming: false,
+          error: e.toString(),
+        );
+      }
     }
   }
 
@@ -240,7 +260,7 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
     String thumbnailQuality = 'very_high',
     BuildContext? context,
   }) {
-    if (!state.isInitialized) return;
+    if (!state.isInitialized || !_canUpdateState()) return;
 
     _cancelAllStreams();
 
@@ -263,14 +283,14 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
 
       _artistSubscription = stream.listen(
         (item) {
-          if (_artistSubscription != null) {
+          if (_artistSubscription != null && _canUpdateState()) {
             final song = Song.fromArtistSong(item);
             state = state.copyWith(artistSongs: [...state.artistSongs, song]);
           }
         },
         onError: (error) {
-          if (_artistSubscription != null) {
-            if (context != null) {
+          if (_artistSubscription != null && _canUpdateState()) {
+            if (context != null && context.mounted) {
               _showErrorToast(context, 'Artist songs error: $error');
             }
             debugPrint('Artist songs error: $error');
@@ -282,21 +302,23 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
           }
         },
         onDone: () {
-          if (_artistSubscription != null) {
+          if (_artistSubscription != null && _canUpdateState()) {
             state = state.copyWith(isLoading: false, isStreaming: false);
           }
         },
       );
     } catch (e) {
-      if (context != null) {
+      if (context != null && context.mounted) {
         _showErrorToast(context, 'Error fetching artist songs: $e');
       }
       debugPrint('Error fetching artist songs: $e');
-      state = state.copyWith(
-        isLoading: false,
-        isStreaming: false,
-        error: e.toString(),
-      );
+      if (_canUpdateState()) {
+        state = state.copyWith(
+          isLoading: false,
+          isStreaming: false,
+          error: e.toString(),
+        );
+      }
     }
   }
 
@@ -304,12 +326,12 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
   void streamRelatedSongs({
     required String songName,
     required String artistName,
-    int limit = 25,
+    int limit = 5,
     String audioQuality = 'high',
     String thumbnailQuality = 'very_high',
     BuildContext? context,
   }) {
-    if (!state.isInitialized) return;
+    if (!state.isInitialized || !_canUpdateState()) return;
 
     _cancelAllStreams();
 
@@ -333,14 +355,14 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
 
       _relatedSubscription = stream.listen(
         (item) {
-          if (_relatedSubscription != null) {
+          if (_relatedSubscription != null && _canUpdateState()) {
             final song = Song.fromRelatedSong(item);
             state = state.copyWith(relatedSongs: [...state.relatedSongs, song]);
           }
         },
         onError: (error) {
-          if (_relatedSubscription != null) {
-            if (context != null) {
+          if (_relatedSubscription != null && _canUpdateState()) {
+            if (context != null && context.mounted) {
               _showErrorToast(context, 'Related songs error: $error');
             }
             debugPrint('Related songs error: $error');
@@ -352,21 +374,53 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
           }
         },
         onDone: () {
-          if (_relatedSubscription != null) {
+          if (_relatedSubscription != null && _canUpdateState()) {
             state = state.copyWith(isLoading: false, isStreaming: false);
           }
         },
       );
     } catch (e) {
-      if (context != null) {
+      if (context != null && context.mounted) {
         _showErrorToast(context, 'Error fetching related songs: $e');
       }
       debugPrint('Error fetching related songs: $e');
-      state = state.copyWith(
-        isLoading: false,
-        isStreaming: false,
-        error: e.toString(),
+      if (_canUpdateState()) {
+        state = state.copyWith(
+          isLoading: false,
+          isStreaming: false,
+          error: e.toString(),
+        );
+      }
+    }
+  }
+
+  Future<YTMusicResponse<AudioUrlResult>> getAudioUrlFlexible({
+    String? title,
+    String? artist,
+    String? videoId,
+    AudioQuality audioQuality = AudioQuality.high,
+  }) async {
+    try {
+      // Validate input parameters
+      if ((videoId?.isEmpty ?? true) &&
+          (title?.isEmpty ?? true) &&
+          (artist?.isEmpty ?? true)) {
+        throw ArgumentError(
+          'Either videoId OR (title and/or artist) must be provided',
+        );
+      }
+
+      final response = await _api.getAudioUrlFlexible(
+        title: title,
+        artist: artist,
+        videoId: videoId,
+        audioQuality: audioQuality,
       );
+
+      return response;
+    } catch (e, stackTrace) {
+      debugPrint('Error in getAudioUrlFlexible: $e\n$stackTrace');
+      rethrow;
     }
   }
 
@@ -408,16 +462,22 @@ class YtMusicNotifier extends StateNotifier<YtMusicState> {
 
   void clearSearch() {
     _cancelAllStreams();
-    state = state.copyWith(searchResults: []);
+    if (_canUpdateState()) {
+      state = state.copyWith(searchResults: []);
+    }
   }
 
   void clearArtistSongs() {
     _cancelAllStreams();
-    state = state.copyWith(artistSongs: []);
+    if (_canUpdateState()) {
+      state = state.copyWith(artistSongs: []);
+    }
   }
 
   void clearRelatedSongs() {
     _cancelAllStreams();
-    state = state.copyWith(relatedSongs: []);
+    if (_canUpdateState()) {
+      state = state.copyWith(relatedSongs: []);
+    }
   }
 }

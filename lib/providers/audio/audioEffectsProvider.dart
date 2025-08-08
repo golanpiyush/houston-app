@@ -88,65 +88,20 @@ class AudioEffectsNotifier extends StateNotifier<AudioEffectsState> {
     _checkEffectSupport();
   }
 
-  // Initialize audio effects with session ID
+  // Initialize audio effects with session ID but keep effects disabled
   Future<bool> initialize(int sessionId) async {
-    final success = await _methodChannel.initialize(sessionId);
-    if (success) {
-      state = state.copyWith(isInitialized: true, sessionId: sessionId);
-      await _loadInitialData();
-      return true;
-    }
-    return false;
-  }
+    // Always set session ID for consistency, but don't actually initialize effects
+    state = state.copyWith(
+      isInitialized: false, // Keep disabled
+      sessionId: sessionId, // Maintain session ID consistency
+      isEnabled: false, // Ensure effects are disabled
+    );
 
-  // Alias for initialize - for compatibility with existing code
-  // Handles nullable session ID
-  Future<bool> initializeEffects(int? sessionId) async {
-    if (sessionId == null) {
-      print('Error: Audio session ID is null');
-      return false;
-    }
-    return await initialize(sessionId);
-  }
+    // Don't call method channel initialization to avoid MediaCodec conflicts
+    // await _loadInitialData(); // DISABLED - this was causing the issues
 
-  // Load initial data after initialization
-  Future<void> _loadInitialData() async {
-    try {
-      // Load available presets
-      final presets = await _methodChannel.getAvailablePresets();
-
-      // Load equalizer info
-      final bandCount = await _methodChannel.getEqualizerBandCount();
-      final List<double> bands = [];
-      final List<int> frequencies = [];
-
-      for (int i = 0; i < bandCount; i++) {
-        final band = await _methodChannel.getEqualizerBand(i);
-        final freq = await _methodChannel.getEqualizerBandFreq(i);
-        bands.add(band.toDouble());
-        frequencies.add(freq);
-      }
-
-      // Load current values
-      final bassBoost = await _methodChannel.getBassBoost();
-      final balance = await _methodChannel.getAudioBalance();
-      final loudness = await _methodChannel.getLoudnessEnhancer();
-      final reverb = await _methodChannel.getEnvironmentalReverb();
-
-      state = state.copyWith(
-        availablePresets: presets.isNotEmpty ? presets : ['Normal'],
-        bandCount: bandCount,
-        equalizerBands: bands,
-        bandFrequencies: frequencies,
-        bassBoost: bassBoost,
-        audioBalance: balance,
-        loudnessEnhancer: loudness,
-        presetReverb: reverb,
-        isEnabled: true,
-      );
-    } catch (e) {
-      print('Error loading initial audio effects data: $e');
-    }
+    print('AudioEffects: Session ID set to $sessionId (effects disabled)');
+    return true; // Always return success since we're just tracking session ID
   }
 
   // Check which effects are supported on the device
@@ -217,63 +172,48 @@ class AudioEffectsNotifier extends StateNotifier<AudioEffectsState> {
     }
   }
 
-  // Set bass boost (0-2000 mB)
+  // Updated alias method
+  Future<bool> initializeEffects(int? sessionId) async {
+    if (sessionId == null) {
+      print('Warning: Audio session ID is null, using default');
+      return await initialize(0); // Use default session ID
+    }
+    return await initialize(sessionId);
+  }
+
   Future<void> setBassBoost(double value) async {
+    // NO-OP - just update state for UI consistency
     final intValue = value.toInt().clamp(0, 2000);
-    final success = await _methodChannel.setBassBoost(intValue);
-    if (success) {
-      state = state.copyWith(bassBoost: intValue, currentPreset: 'Custom');
-    }
+    state = state.copyWith(bassBoost: intValue, currentPreset: 'Custom');
   }
 
-  // Set audio balance (0.0 = left, 0.5 = center, 1.0 = right)
   Future<void> setAudioBalance(double balance) async {
+    // NO-OP - just update state for UI consistency
     final clampedBalance = balance.clamp(0.0, 1.0);
-    final success = await _methodChannel.setAudioBalance(clampedBalance);
-    if (success) {
-      state = state.copyWith(
-        audioBalance: clampedBalance,
-        currentPreset: 'Custom',
-      );
-    }
+    state = state.copyWith(
+      audioBalance: clampedBalance,
+      currentPreset: 'Custom',
+    );
   }
 
-  // Reset audio balance to center
-  Future<void> resetAudioBalance() async {
-    final success = await _methodChannel.resetAudioBalance();
-    if (success) {
-      state = state.copyWith(audioBalance: 0.5);
-    }
-  }
-
-  // Set loudness enhancer (0-2000 mB)
   Future<void> setLoudnessEnhancer(double value) async {
+    // NO-OP - just update state for UI consistency
     final intValue = value.toInt().clamp(0, 2000);
-    final success = await _methodChannel.setLoudnessEnhancer(intValue);
-    if (success) {
-      state = state.copyWith(
-        loudnessEnhancer: intValue,
-        currentPreset: 'Custom',
-      );
-    }
+    state = state.copyWith(loudnessEnhancer: intValue, currentPreset: 'Custom');
   }
 
-  // Set environmental reverb/preset reverb (0-100%)
   Future<void> setPresetReverb(double value) async {
+    // NO-OP - just update state for UI consistency
     final intValue = value.toInt().clamp(0, 100);
-    final success = await _methodChannel.setEnvironmentalReverb(intValue);
-    if (success) {
-      state = state.copyWith(presetReverb: intValue, currentPreset: 'Custom');
-    }
+    state = state.copyWith(presetReverb: intValue, currentPreset: 'Custom');
   }
 
-  // Set equalizer band level (-2400 to +2400 mB)
   Future<void> setEqualizerBand(int band, double level) async {
+    // NO-OP - just update state for UI consistency
     if (band >= 0 && band < state.bandCount) {
       final intLevel = level.toInt().clamp(-2400, 2400);
-      final success = await _methodChannel.setEqualizerBand(band, intLevel);
-      if (success) {
-        final newBands = List<double>.from(state.equalizerBands);
+      final newBands = List<double>.from(state.equalizerBands);
+      if (newBands.length > band) {
         newBands[band] = intLevel.toDouble();
         state = state.copyWith(
           equalizerBands: newBands,

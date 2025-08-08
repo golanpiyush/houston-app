@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'package:houston/models/lyrics_model.dart';
+import 'package:houston/providers/lyrics_provider_provider.dart';
 import 'package:http/http.dart' as http;
 import 'package:houston/utils/lyrics_parser.dart';
 
@@ -31,7 +32,7 @@ class LyricsProvider {
     String artist, {
     int duration = -1,
   }) async {
-    // Add validation for empty inputs
+    // Add validation for empty inputs FIRST
     if (title.trim().isEmpty || artist.trim().isEmpty) {
       return {'success': false, 'error': 'Title or artist cannot be empty'};
     }
@@ -56,7 +57,7 @@ class LyricsProvider {
       }
 
       print(
-        'LYRICS_PROVIDER: Result from ${selectedSource}: ${result['success']}',
+        'LYRICS_PROVIDER: Result from $selectedSource: ${result['success']}',
       );
       return result;
     } catch (e) {

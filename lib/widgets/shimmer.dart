@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import 'dart:math';
+
 class AppShimmer extends StatelessWidget {
   final Widget child;
   final bool isLoading;
@@ -140,6 +142,72 @@ class AlbumArtShimmer extends StatelessWidget {
       borderRadius: BorderRadius.circular(borderRadius),
       margin: margin,
       child: const SizedBox.shrink(),
+    );
+  }
+}
+
+// Optional: Enhanced shimmer effect widget for even more control
+class SexyShimmerEffect extends StatefulWidget {
+  final Widget child;
+  final Duration duration;
+  final Color baseColor;
+  final Color highlightColor;
+
+  const SexyShimmerEffect({
+    super.key,
+    required this.child,
+    this.duration = const Duration(milliseconds: 1500),
+    required this.baseColor,
+    required this.highlightColor,
+  });
+
+  @override
+  _SexyShimmerEffectState createState() => _SexyShimmerEffectState();
+}
+
+class _SexyShimmerEffectState extends State<SexyShimmerEffect>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(duration: widget.duration, vsync: this)
+      ..repeat();
+
+    _animation = Tween<double>(begin: -2.0, end: 2.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return ShaderMask(
+          shaderCallback: (bounds) {
+            return LinearGradient(
+              begin: Alignment(_animation.value - 1, 0),
+              end: Alignment(_animation.value + 1, 0),
+              colors: [
+                widget.baseColor,
+                widget.highlightColor,
+                widget.baseColor,
+              ],
+              stops: const [0.0, 0.5, 1.0],
+            ).createShader(bounds);
+          },
+          child: widget.child,
+        );
+      },
     );
   }
 }

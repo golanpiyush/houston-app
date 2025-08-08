@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:houston/models/song.dart';
-import 'package:houston/providers/audio_state_provider.dart';
+import 'package:houston/providers/audio/audio_state_provider.dart';
 import 'package:houston/providers/ytmusic_provider.dart';
 
 class ArtistInfoPage extends ConsumerStatefulWidget {
@@ -227,7 +227,7 @@ class _ArtistInfoPageState extends ConsumerState<ArtistInfoPage>
             // Extract bio (first paragraph)
             String bio = pageData.extract ?? pageData.description ?? '';
             if (bio.length > 300) {
-              bio = bio.substring(0, 300) + '...';
+              bio = '${bio.substring(0, 300)}...';
             }
 
             // Try to extract active years from the extract

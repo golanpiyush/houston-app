@@ -55,7 +55,7 @@ class WikipediaService {
             // Extract bio
             String bio = pageData.extract ?? pageData.description ?? '';
             if (bio.length > 300) {
-              bio = bio.substring(0, 300) + '...';
+              bio = '${bio.substring(0, 300)}...';
             }
 
             // Extract active years

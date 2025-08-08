@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:houston/models/lyrics_model.dart';
-import 'package:houston/providers/audio_state_provider.dart';
+import 'package:houston/providers/audio/audio_state_provider.dart';
 import 'package:houston/providers/lyrics_provider.dart' as lyrics_provider;
 import 'package:houston/providers/lyrics_provider.dart';
 
@@ -290,7 +290,7 @@ class _LyricsOverlayState extends ConsumerState<LyricsOverlay>
     final settings = ref.watch(settingsProvider);
 
     // Map font names to Google Fonts
-    TextStyle Function() getFontStyle = () {
+    getFontStyle() {
       switch (settings.lyricsFont) {
         case 'Poppins':
           return GoogleFonts.poppins();
@@ -343,7 +343,7 @@ class _LyricsOverlayState extends ConsumerState<LyricsOverlay>
         default:
           return GoogleFonts.poppins();
       }
-    };
+    }
 
     return getFontStyle().copyWith(height: 1.4, letterSpacing: 0.5);
   }

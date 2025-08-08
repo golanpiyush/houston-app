@@ -103,14 +103,14 @@ class UpdateDialog extends StatefulWidget {
   final String currentFont;
 
   const UpdateDialog({
-    Key? key,
+    super.key,
     required this.latest,
     required this.currentVersion,
     required this.latestVersion,
     required this.uploadedTime,
     required this.formattedDownloadTime,
     required this.currentFont,
-  }) : super(key: key);
+  });
 
   @override
   State<UpdateDialog> createState() => _UpdateDialogState();
@@ -444,9 +444,8 @@ class _UpdateDialogState extends State<UpdateDialog>
                       alignment: Alignment.centerLeft,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.surfaceVariant.withOpacity(
-                          0.3,
-                        ),
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withOpacity(0.3),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Row(
@@ -586,7 +585,7 @@ class _UpdateDialogState extends State<UpdateDialog>
                                           fontSize: 13,
                                           backgroundColor: theme
                                               .colorScheme
-                                              .surfaceVariant
+                                              .surfaceContainerHighest
                                               .withOpacity(0.5),
                                           color: theme.colorScheme.primary,
                                         ),

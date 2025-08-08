@@ -15,11 +15,11 @@ class DownloadProgressDialog extends StatefulWidget {
   final String version;
 
   const DownloadProgressDialog({
-    Key? key,
+    super.key,
     required this.downloadUrl,
     required this.fileName,
     required this.version,
-  }) : super(key: key);
+  });
 
   @override
   State<DownloadProgressDialog> createState() => _DownloadProgressDialogState();
@@ -45,8 +45,8 @@ class _DownloadProgressDialogState extends State<DownloadProgressDialog>
   late Animation<double> _pulseAnimation;
   late Animation<double> _rotationAnimation;
 
-  int _previousDownloadedLength = 0;
-  List<double> _speedHistory = [];
+  final int _previousDownloadedLength = 0;
+  final List<double> _speedHistory = [];
   static const int _speedHistorySize = 5;
 
   @override

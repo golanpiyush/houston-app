@@ -2,12 +2,15 @@ import 'package:houston/providers/lyrics_provider.dart';
 
 class AppSettings {
   final String themeMode;
+  final bool breathingAnimation; // Add this line
+
   final String audioQuality;
   final String thumbnailQuality;
   final int limit;
   final bool downloadMode;
   final bool wordByWordLyrics;
   final String lyricsFont;
+  final String appFont;
   final LyricsSource lyricsProvider;
 
   AppSettings({
@@ -16,8 +19,11 @@ class AppSettings {
     required this.thumbnailQuality,
     required this.limit,
     required this.downloadMode,
+    this.breathingAnimation = false, // Add this with default value
+
     required this.wordByWordLyrics,
     required this.lyricsFont,
+    required this.appFont,
     required this.lyricsProvider,
   });
 
@@ -29,6 +35,8 @@ class AppSettings {
     bool? downloadMode,
     bool? wordByWordLyrics,
     String? lyricsFont,
+    String? appFont,
+    bool? breathingAnimation,
     LyricsSource? lyricsProvider,
   }) {
     return AppSettings(
@@ -39,6 +47,9 @@ class AppSettings {
       downloadMode: downloadMode ?? this.downloadMode,
       wordByWordLyrics: wordByWordLyrics ?? this.wordByWordLyrics,
       lyricsFont: lyricsFont ?? this.lyricsFont,
+      breathingAnimation: breathingAnimation ?? this.breathingAnimation,
+
+      appFont: appFont ?? this.appFont, // Add this
       lyricsProvider: lyricsProvider ?? this.lyricsProvider,
     );
   }

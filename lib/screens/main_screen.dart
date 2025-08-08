@@ -1,13 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:houston/screens/playlistscreenview.dart';
 import 'package:houston/widgets/animated_nav_item.dart';
 import 'home_screen.dart';
 import 'saved_screen.dart';
-import 'playlist_screen.dart';
+import 'playlist_screen.dart'; // This is now the main playlists list screen
 import 'player_screen.dart';
 import 'settings_screen.dart';
-import '../providers/audio_state_provider.dart';
+import '../providers/audio/audio_state_provider.dart';
 
 class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
@@ -45,7 +46,7 @@ class _MainScreenState extends ConsumerState<MainScreen> {
         children: const [
           HomeScreen(),
           SavedScreen(),
-          PlaylistScreen(),
+          PlaylistScreen(), // Now using the correct PlaylistScreen (list of playlists)
           SettingsScreen(),
         ],
       ),

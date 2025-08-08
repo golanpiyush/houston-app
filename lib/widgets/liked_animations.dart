@@ -9,11 +9,11 @@ class RandomGlowLikedAnimation extends StatefulWidget {
   final int delay;
 
   const RandomGlowLikedAnimation({
-    Key? key,
+    super.key,
     this.onTap,
     this.size = 24.0,
     required this.delay,
-  }) : super(key: key);
+  });
 
   @override
   State<RandomGlowLikedAnimation> createState() =>

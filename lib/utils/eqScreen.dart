@@ -3,10 +3,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:houston/providers/audioEffectsProvider.dart';
+import 'package:houston/providers/audio/audioEffectsProvider.dart';
 
 class EQScreen extends ConsumerStatefulWidget {
-  const EQScreen({Key? key}) : super(key: key);
+  const EQScreen({super.key});
 
   @override
   ConsumerState<EQScreen> createState() => _EQScreenState();
@@ -103,7 +103,7 @@ class _EQScreenState extends ConsumerState<EQScreen>
       body: SafeArea(
         child: Column(
           children: [
-            Container(
+            SizedBox(
               height: showWarning ? null : 0,
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
@@ -524,7 +524,7 @@ class KnobWidget extends StatefulWidget {
   final double? warningThreshold;
 
   const KnobWidget({
-    Key? key,
+    super.key,
     required this.min,
     required this.max,
     required this.value,
@@ -535,7 +535,7 @@ class KnobWidget extends StatefulWidget {
     required this.baseColor,
     required this.highlightColor,
     this.warningThreshold,
-  }) : super(key: key);
+  });
 
   @override
   _KnobWidgetState createState() => _KnobWidgetState();

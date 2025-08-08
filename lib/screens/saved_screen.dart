@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:houston/widgets/liked_animations.dart';
 import '../models/downloaded_song.dart';
 import '../models/song.dart';
-import '../providers/audio_state_provider.dart';
+import '../providers/audio/audio_state_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/storage_service.dart';
 
@@ -93,7 +93,7 @@ class _SavedScreenState extends ConsumerState<SavedScreen>
           style: GoogleFonts.montserrat(
             fontSize: 24,
             fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.onBackground,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         actions: [
@@ -155,7 +155,7 @@ class _SavedScreenState extends ConsumerState<SavedScreen>
                       style: GoogleFonts.montserrat(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.onBackground,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -425,7 +425,7 @@ class _SavedScreenState extends ConsumerState<SavedScreen>
             style: GoogleFonts.montserrat(
               fontSize: 20,
               fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onBackground,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           content: Text(

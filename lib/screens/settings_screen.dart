@@ -4,6 +4,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:houston/providers/lyrics_provider.dart';
 import 'package:houston/utils/update_checker.dart';
+import 'package:houston/widgets/sleep_timer_card.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../providers/settings_provider.dart';
 
@@ -144,6 +145,161 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   //     );
   //   }
   // }
+  // Add this method to your settings screen class
+  Future<bool> _showAudioVisualizerDialog(BuildContext context) async {
+    return await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: Row(
+                children: [
+                  Icon(
+                    Icons.graphic_eq,
+                    color: Theme.of(context).primaryColor,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 8),
+                  const Text('Audio Visualizer'),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Enable audio-reactive breathing animation?',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.blue.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.music_note,
+                              size: 16,
+                              color: Colors.blue[700],
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Enhanced Visual Experience',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Album art will pulse and glow with realistic music-like patterns',
+                          style: TextStyle(fontSize: 13, color: Colors.black87),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.orange.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Colors.orange[700],
+                            ),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text(
+                                'Performance Impact',
+                                style: TextStyle(fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'May slightly increase battery usage during music playback',
+                          style: TextStyle(fontSize: 13, color: Colors.black87),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 16,
+                        color: Colors.green[600],
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'No microphone access required',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text(
+                    'Enable',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,9 +358,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
           ),
-
           const SizedBox(height: 16),
 
+          // Inside your SettingsScreen build method, replace the existing font selection code with this:
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
@@ -212,31 +368,141 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'Download Settings',
+                    'Text & Display',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Font Selection Dropdown
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'App Font',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: DropdownButton<String>(
+                          value: _getSafeCurrentFont(settings.appFont),
+                          isExpanded: true,
+                          underline: const SizedBox(),
+                          items: SettingsNotifier.availableFonts.map((
+                            String font,
+                          ) {
+                            return DropdownMenuItem<String>(
+                              value: font,
+                              child: Text(
+                                font,
+                                style: _getGoogleFont(
+                                  font,
+                                ).copyWith(fontSize: 16),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (String? newFont) {
+                            if (newFont != null) {
+                              ref
+                                  .read(settingsProvider.notifier)
+                                  .updateAppFont(newFont);
+                              Fluttertoast.showToast(
+                                msg: "App font changed to $newFont",
+                              );
+                            }
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Font Preview
+                      Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Preview:',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'The quick brown fox jumps over the lazy dog',
+                              style: _getGoogleFont(
+                                _getSafeCurrentFont(settings.appFont),
+                              ).copyWith(fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          // Add this card to your ListView children
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Visual Effects',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   SwitchListTile(
-                    title: const Text('Download when saving'),
+                    title: const Text('Breathing Shadow Animation'),
                     subtitle: const Text(
-                      'Automatically download songs when you save them',
+                      'Enable audio-reactive pulsing effect on album art shadows',
                     ),
-                    value: settings.downloadMode,
-                    onChanged: (value) {
-                      ref.read(settingsProvider.notifier).toggleDownloadMode();
-                      Fluttertoast.showToast(
-                        msg: value
-                            ? "Downloads will be saved automatically"
-                            : "Only metadata will be saved",
-                      );
+                    value: settings.breathingAnimation,
+                    onChanged: (value) async {
+                      if (value) {
+                        // Show permission dialog when enabling
+                        final shouldEnable = await _showAudioVisualizerDialog(
+                          context,
+                        );
+                        if (shouldEnable) {
+                          ref
+                              .read(settingsProvider.notifier)
+                              .toggleBreathingAnimation();
+                          Fluttertoast.showToast(
+                            msg: "Audio-reactive breathing animation enabled",
+                          );
+                        }
+                      } else {
+                        // Disable directly
+                        ref
+                            .read(settingsProvider.notifier)
+                            .toggleBreathingAnimation();
+                        Fluttertoast.showToast(
+                          msg: "Breathing animation disabled",
+                        );
+                      }
                     },
                   ),
                 ],
               ),
             ),
           ),
-
           const SizedBox(height: 16),
+          const SleepTimerCard(),
+          const SizedBox(height: 16),
+
           // Enhanced UI Card with font selector
           Card(
             child: Padding(

@@ -22,12 +22,15 @@ class HoustonInstaller(private val context: Context, flutterEngine: FlutterEngin
         private const val TAG = "HoustonInstaller"
         private const val CHANNEL_NAME = "apk_installer"
         private const val INSTALL_REQUEST_CODE = 1001
-        private const val PERMISSION_CHECK_DELAY = 2000L // 2 seconds
+        private const val PERMISSION_CHECK_DELAY = 1000L // 1 second for more responsive checking
+        private const val MAX_PERMISSION_CHECKS = 30 // Check for up to 30 seconds
     }
 
     private val channel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL_NAME)
     private val handler = Handler(Looper.getMainLooper())
     private var pendingInstallPath: String? = null
+    private var permissionCheckCount = 0
+    private var isMonitoringPermission = false
 
     init {
         channel.setMethodCallHandler { call, result ->
@@ -65,6 +68,7 @@ class HoustonInstaller(private val context: Context, flutterEngine: FlutterEngin
                         if (canInstall && pendingInstallPath != null) {
                             val pathToInstall = pendingInstallPath
                             pendingInstallPath = null
+                            stopPermissionMonitoring()
                             
                             // Delay slightly to ensure the permission change is fully processed
                             handler.postDelayed({
@@ -89,8 +93,8 @@ class HoustonInstaller(private val context: Context, flutterEngine: FlutterEngin
                 "openAppSettings" -> {
                     try {
                         openInstallPermissionSettings()
-                        // Start periodic permission checking
-                        startPermissionMonitoring()
+                        // Start enhanced permission monitoring
+                        startEnhancedPermissionMonitoring()
                         result.success(true)
                     } catch (e: Exception) {
                         Log.e(TAG, "Error opening settings", e)
@@ -105,6 +109,38 @@ class HoustonInstaller(private val context: Context, flutterEngine: FlutterEngin
                     } catch (e: Exception) {
                         Log.e(TAG, "Error getting app info", e)
                         result.error("APP_INFO_ERROR", e.message, null)
+                    }
+                }
+                
+                "checkPermissionStatus" -> {
+                    // New method to manually check permission status
+                    try {
+                        val canInstall = canInstallUnknownSources()
+                        
+                        if (canInstall && pendingInstallPath != null) {
+                            // Permission granted, proceed with installation
+                            val pathToInstall = pendingInstallPath
+                            pendingInstallPath = null
+                            stopPermissionMonitoring()
+                            
+                            handler.postDelayed({
+                                try {
+                                    installApk(pathToInstall!!)
+                                    channel.invokeMethod("permissionGrantedInstallStarted", null)
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Manual check install failed", e)
+                                    channel.invokeMethod("installFailed", e.message)
+                                }
+                            }, 300)
+                        }
+                        
+                        result.success(mapOf(
+                            "canInstall" to canInstall,
+                            "hasPendingInstall" to (pendingInstallPath != null)
+                        ))
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error in manual permission check", e)
+                        result.error("PERMISSION_CHECK_ERROR", e.message, null)
                     }
                 }
                 
@@ -131,36 +167,111 @@ class HoustonInstaller(private val context: Context, flutterEngine: FlutterEngin
         }
     }
 
-    private fun startPermissionMonitoring() {
+    private fun startEnhancedPermissionMonitoring() {
+        if (isMonitoringPermission) {
+            Log.d(TAG, "Permission monitoring already active")
+            return
+        }
+        
+        isMonitoringPermission = true
+        permissionCheckCount = 0
+        
+        Log.d(TAG, "Starting enhanced permission monitoring")
+        
+        // Notify Flutter that monitoring has started
+        channel.invokeMethod("permissionMonitoringStarted", mapOf(
+            "message" to "Waiting for permission to be granted..."
+        ))
+        
         val checkPermission = object : Runnable {
             override fun run() {
                 try {
+                    permissionCheckCount++
                     val canInstall = canInstallUnknownSources()
-                    Log.d(TAG, "Permission monitoring - Can install: $canInstall")
+                    
+                    Log.d(TAG, "Permission check #$permissionCheckCount - Can install: $canInstall")
                     
                     if (canInstall && pendingInstallPath != null) {
+                        // Permission granted! Proceed with installation
                         val pathToInstall = pendingInstallPath
                         pendingInstallPath = null
+                        stopPermissionMonitoring()
                         
-                        // Permission granted, proceed with installation
-                        try {
-                            installApk(pathToInstall!!)
-                            channel.invokeMethod("permissionGrantedInstallStarted", null)
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Auto-install after permission grant failed", e)
-                            channel.invokeMethod("installFailed", e.message)
+                        Log.d(TAG, "Permission granted, starting installation")
+                        
+                        // Notify Flutter about permission grant
+                        channel.invokeMethod("permissionGranted", mapOf(
+                            "message" to "Permission granted, starting installation..."
+                        ))
+                        
+                        // Small delay to ensure UI updates, then install
+                        handler.postDelayed({
+                            try {
+                                installApk(pathToInstall!!)
+                                channel.invokeMethod("permissionGrantedInstallStarted", mapOf(
+                                    "message" to "Installation started after permission grant"
+                                ))
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Auto-install after permission grant failed", e)
+                                channel.invokeMethod("installFailed", mapOf(
+                                    "error" to e.message,
+                                    "stage" to "post_permission_grant"
+                                ))
+                            }
+                        }, 200)
+                        
+                    } else if (!canInstall && pendingInstallPath != null && permissionCheckCount < MAX_PERMISSION_CHECKS) {
+                        // Still no permission, continue checking
+                        
+                        // Notify Flutter about waiting status every 5 checks (5 seconds)
+                        if (permissionCheckCount % 5 == 0) {
+                            channel.invokeMethod("permissionWaiting", mapOf(
+                                "message" to "Still waiting for permission... (${permissionCheckCount}s)",
+                                "checkCount" to permissionCheckCount
+                            ))
                         }
-                    } else if (!canInstall && pendingInstallPath != null) {
-                        // Still no permission, check again
+                        
                         handler.postDelayed(this, PERMISSION_CHECK_DELAY)
+                        
+                    } else {
+                        // Either no pending install or timeout reached
+                        if (permissionCheckCount >= MAX_PERMISSION_CHECKS && pendingInstallPath != null) {
+                            Log.w(TAG, "Permission monitoring timeout reached")
+                            channel.invokeMethod("permissionTimeout", mapOf(
+                                "message" to "Permission monitoring timed out. Please try again."
+                            ))
+                        }
+                        
+                        stopPermissionMonitoring()
                     }
+                    
                 } catch (e: Exception) {
-                    Log.e(TAG, "Error in permission monitoring", e)
+                    Log.e(TAG, "Error in enhanced permission monitoring", e)
+                    stopPermissionMonitoring()
+                    channel.invokeMethod("permissionMonitoringError", mapOf(
+                        "error" to e.message
+                    ))
                 }
             }
         }
         
+        // Start the monitoring loop
         handler.postDelayed(checkPermission, PERMISSION_CHECK_DELAY)
+    }
+
+    private fun stopPermissionMonitoring() {
+        if (isMonitoringPermission) {
+            isMonitoringPermission = false
+            permissionCheckCount = 0
+            Log.d(TAG, "Stopped permission monitoring")
+            
+            channel.invokeMethod("permissionMonitoringStopped", null)
+        }
+    }
+
+    // Legacy method kept for backward compatibility
+    private fun startPermissionMonitoring() {
+        startEnhancedPermissionMonitoring()
     }
 
     private fun openInstallPermissionSettings() {
