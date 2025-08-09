@@ -72,11 +72,11 @@ Inspired by **YouTube Music's interface** but designed for users who value **pri
 <summary>📸 View Screenshots</summary>
 
 <div align="center">
-  <img src="assets/ss/houstonhomescreen.jpg" alt="Home Screen" width="200" />
-  <img src="assets/ss/houstonplayerscreenwithsyncedlyrics.jpg" alt="Now Playing Screen" width="200" />
-  <img src="assets/ss/houstonrelatedsongsqueuescreen.jpg" alt="Queue Edit Screen" width="200" />
-  <img src="assets/ss/houstonsavedscreen.jpg" alt="Saved/Downloaded Screen" width="200" />
-  <img src="assets/ss/houstonsettingsscreen.jpg" alt="Settings Screen" width="200" />
+  <img src="assets/ss/houston_home_screen.jpg" alt="Home Screen" width="200" />
+  <img src="assets/ss/houston_playerscreen_with_sync_lyrics.jpg" alt="Now Playing Screen" width="200" />
+  <img src="assets/ss/houston_ related_songs_queue_screen.jpg" alt="Queue Edit Screen" width="200" />
+  <img src="assets/ss/houston_saved_screen.jpg" alt="Saved/Downloaded Screen" width="200" />
+  <img src="assets/ss/houston_settings_screen.jpg" alt="Settings Screen" width="200" />
 </div>
 
 </details>
