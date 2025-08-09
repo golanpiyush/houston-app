@@ -53,7 +53,7 @@ Inspired by **YouTube Music's interface** but designed for users who value **pri
 ## 📱 Installation
 
 ### Quick Install
-1. 📥 Download the latest APK from [Releases](https://github.com/golanpiyush/houston/releases/latest)
+1. 📥 Download the latest APK from [Releases](https://github.com/golanpiyush/houston-app/releases/latest)
 2. ⚙️ Enable **installation from unknown sources** in Android settings
 3. 📲 Install by tapping the APK
 4. 🔄 Future updates handled by **in-app updater**
