@@ -64,8 +64,10 @@ Inspired by **YouTube Music's interface** but designed for users who value **pri
 - 🌐 **Network** – Streaming & updates
 - 🔐 **Account Sync** *(Optional)* – Cloud sync
 
----
 
+## 🤖 Plugin/s
+- https://github.com/golanpiyush/yt_flutter_musicapi
+---
 ## 🎨 Screenshots
 
 <details>
