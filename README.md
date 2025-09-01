@@ -94,7 +94,7 @@ Inspired by **YouTube Music's interface** but designed for users who value **pri
 ### Build Steps
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/houston.git
+git clone https://github.com/golanpiyush/houston-app.git
 cd houston
 
 # Build debug version
