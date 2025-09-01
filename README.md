@@ -95,7 +95,7 @@ Inspired by **YouTube Music's interface** but designed for users who value **pri
 ```bash
 # Clone the repository
 git clone https://github.com/golanpiyush/houston-app.git
-cd houston
+cd houston-app
 
 # Build debug version
 ./gradlew assembleDebug
