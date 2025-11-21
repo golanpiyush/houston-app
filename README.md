@@ -35,13 +35,12 @@ Inspired by **YouTube Music's interface** but designed for users who value **pri
 - **Hybrid Playback** – Local files + streaming
 - **Smart Fallback** – Auto-switch source on failure
 - **Advanced Sync** – Playlist & library sync with conflict resolution
-- **Radio Streaming** – Support for custom stations
+- **Radio Streaming** – Support for custom stations based on one particular song (Under Development)
 
 ### 🔧 **Advanced Features**
 - **In-App Updates** – Auto-update via GitHub releases with rollback protection
 - **Offline Downloads** – Cache management & explicit offline mode
-- **Smart Library** – Tag-aware metadata & related song suggestions
-- **Custom Sources** – Add M3U playlists & stream endpoints
+
 
 ---
 
