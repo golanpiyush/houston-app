@@ -30,11 +30,6 @@ Inspired by **YouTube Music's interface** but designed for users who value **pri
 - **Advanced Queue Editing** – Drag & drop reordering with undo
 - **Background Playback** – With Media controls 
 
-### 🎚️ **Audio Enhancement**
-- **Professional Equalizer** – Multi-band EQ with presets
-- **Audio Effects Suite** – Normalization, reverb, bass boost
-- **Smart Audio Processing** – Auto level adjustment & quality optimization
-- **Custom Presets** – Save your audio/albumart quality settings
 
 ### 🌐 **Connectivity & Sync**
 - **Hybrid Playback** – Local files + streaming
