@@ -7,6 +7,12 @@
 [![GitHub Stars](https://img.shields.io/github/stars/golanpiyush/houston-app?style=for-the-badge&color=FFD700)](https://github.com/golanpiyush/houston-app/stars)
 
 
+
+⚠️Houston's engine is failing as it's governed by an older version of the engine. the new engine is new but not yet implemented 🍺
+
+
+
+
 **A modern, minimal, offline-capable music player built for knowledge-seekers, not time wasters.**
 
 *Material 3 design • Offline + online sync • EQ & effects • In-app updates • Radio streaming*
