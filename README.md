@@ -4,7 +4,6 @@
 
 [![Latest Release](https://img.shields.io/github/v/release/golanpiyush/houston-app?label=Latest%20Release&style=for-the-badge&color=00D4AA)](https://github.com/golanpiyush/houston-app/releases/latest)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge)](https://github.com/golanpiyush/houston/blob/main/LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/golanpiyush/houston-app?style=for-the-badge&color=FFD700)](https://github.com/golanpiyush/houston-app/stars)
 
 
 
