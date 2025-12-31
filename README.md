@@ -8,7 +8,7 @@
 
 
 
-⚠️Houston's engine is failing as it's governed by an older version of the search engine. the new engine is out but not yet implemented 🍺
+⚠️Houston's engine is failing as it's governed by an older version of the search engine. the new engine is out and will not be implemented as I don't understand the code myself anymore 🫡🍺
 
 
 
