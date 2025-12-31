@@ -9,7 +9,7 @@
 
 WARNING!
 
-⚠️Houston's engine is failing as it's governed by an older version of the search engine. the new engine is out but will not be implemented as I don't understand the code myself anymore 🫡🍺
+⚠️ Houston’s engine is failing because it’s governed by an older version of the search engine. A new engine is available, but it won’t be implemented since I no longer understand the code myself. 🫡🍺
 
 
 
