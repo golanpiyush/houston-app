@@ -14,9 +14,6 @@ WARNING!
 
 
 
-**A modern, minimal, offline-capable music player built for knowledge-seekers, not time wasters.**
-
-*Material 3 design • Offline + online sync • EQ & effects • In-app updates • Radio streaming*
 
 </div>
 <div align="center">
